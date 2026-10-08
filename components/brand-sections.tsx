@@ -4,27 +4,27 @@ const services = [
   {
     icon: "↗",
     title: "Vehicle sales",
-    description: "Explore the demo collection and enquire about a car that catches your eye.",
+    description: "Browse available vehicles and contact the sales team for current availability.",
   },
   {
     icon: "⌕",
     title: "Vehicle sourcing",
-    description: "Tell us what you have in mind and start a conversation about finding a match.",
+    description: "Tell us your preferred vehicle, budget and requirements and let the sales team source a match.",
   },
   {
     icon: "£",
     title: "Finance assistance",
-    description: "Ask about finance options. Terms and eligibility must be confirmed directly.",
+    description: "Start a finance conversation with the sales team. Terms and eligibility are confirmed directly.",
   },
   {
     icon: "⇄",
     title: "Trade-in enquiry",
-    description: "Share details about your current car and ask about a possible part exchange.",
+    description: "Share your vehicle details and start a trade-in or valuation conversation.",
   },
   {
     icon: "?",
     title: "Customer support",
-    description: "Get in touch with a question about a vehicle or the next step.",
+    description: "Get direct help with vehicles, sales, sourcing, finance or after-sales questions.",
   },
 ];
 
@@ -62,7 +62,7 @@ export function ServicesSection() {
           </a>
         </div>
         <p className="services-disclaimer">
-          Service options shown are examples for this demo and should be confirmed before launch.
+          Sales and support pathways connect visitors directly to the dealership.
         </p>
         <div className="services-grid">
           {services.map((service) => (
@@ -129,10 +129,10 @@ export function AboutSection() {
             Legend Motors brings vehicle discovery and enquiry together in one straightforward place. Browse the collection, compare the details, then get in touch when you are ready.
           </p>
           <p>
-            The vehicles and contact details on this preview are placeholders. Verified inventory, dealership background and location details should be added before launch.
+            Legend Motors Malawi helps customers discover vehicles and connect with the dealership for sales, sourcing and related automotive services.
           </p>
           <a className="text-link" href="#vehicles">
-            Explore the demo collection <span aria-hidden="true">&#8594;</span>
+            Explore vehicles <span aria-hidden="true">&#8594;</span>
           </a>
         </div>
       </div>
@@ -147,7 +147,7 @@ export function EnquiryBanner() {
         <div>
           <p className="eyebrow">Found one you like?</p>
           <h2 id="enquiry-banner-heading">Let’s get you closer to the driver’s seat.</h2>
-          <p>Ask us about a vehicle. This demo site does not send or store enquiries yet.</p>
+          <p>Ask about a vehicle, finance, sourcing or trade-in and connect directly with the sales team.</p>
         </div>
         <a className="button button--charcoal" href="#contact">
           Make an enquiry <span aria-hidden="true">&#8594;</span>
