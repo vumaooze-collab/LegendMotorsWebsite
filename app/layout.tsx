@@ -14,26 +14,30 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Legend Motors | Find your next car",
+    default: "Legend Motors | Quality Vehicles in Malawi",
     template: "%s | Legend Motors",
   },
   description:
-    "Legend Motors Malawi — explore vehicles, enquire about sales, sourcing, finance and trade-ins.",
+    "Browse quality vehicles from Legend Motors Malawi. Explore available stock, enquire about vehicles and connect with our sales team.",
   openGraph: {
-    title: "Legend Motors | Find your next car",
+    title: "Legend Motors | Quality Vehicles in Malawi",
     description:
-      "Explore vehicles and connect directly with Legend Motors Malawi sales.",
+      "Browse available vehicles and connect directly with Legend Motors Malawi.",
     type: "website",
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable}`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
