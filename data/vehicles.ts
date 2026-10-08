@@ -1,5 +1,5 @@
-export type VehicleFuel = "Petrol" | "Hybrid" | "Electric";
-export type VehicleBody = "Coupe" | "Saloon" | "SUV" | "Hatchback";
+export type VehicleFuel = "Petrol" | "Hybrid" | "Electric" | "Diesel";
+export type VehicleBody = "Coupe" | "Saloon" | "SUV" | "Hatchback" | "MPV";
 
 export interface Vehicle {
   id: string;
@@ -19,117 +19,101 @@ export interface Vehicle {
 
 export const DEMO_VEHICLES: Vehicle[] = [
   {
-    id: "porsche-911-carrera-2022",
-    year: 2022,
-    make: "Porsche",
-    model: "911 Carrera",
-    price: 126900,
-    mileage: 9800,
-    transmission: "Automatic",
-    fuel: "Petrol",
-    body: "Coupe",
-    image:
-      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=85",
-    imageAlt: "Silver Porsche sports car on a quiet road",
-    description:
-      "A performance-focused coupe with a distinctive profile and a driver-first cabin. This listing is demonstration content; confirm specification and availability before publication.",
-    featured: true,
-  },
-  {
-    id: "bmw-5-series-530i-2023",
+    id: "toyota-harrier-2023",
     year: 2023,
-    make: "BMW",
-    model: "5 Series 530i",
-    price: 48500,
-    mileage: 13200,
+    make: "Toyota",
+    model: "Harrier",
+    price: 105000000,
+    mileage: 77000,
     transmission: "Automatic",
     fuel: "Petrol",
-    body: "Saloon",
-    image:
-      "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&q=85",
-    imageAlt: "Dark luxury saloon parked outdoors",
-    description:
-      "A refined executive saloon imagined for long-distance comfort and everyday use. Vehicle details and the displayed demo price are placeholders.",
+    body: "SUV",
+    image: "https://img4.autoyas.com/655/476/1589168216554764.jpg",
+    imageAlt: "2023 Toyota Harrier presented by Legend Motors Malawi",
+    description: "2023 Toyota Harrier with 77,000 km. Publicly posted by Legend Motors Malawi at MK105,000,000. Confirm current availability and final price directly with the dealership.",
     featured: true,
   },
   {
-    id: "mercedes-benz-c-class-2022",
-    year: 2022,
+    id: "toyota-rav4-adventure-2021",
+    year: 2021,
+    make: "Toyota",
+    model: "RAV4 Adventure",
+    price: 135000000,
+    mileage: 47000,
+    transmission: "Automatic",
+    fuel: "Petrol",
+    body: "SUV",
+    image: "https://img3.autoyas.com/638/738/1590841966387389.jpg",
+    imageAlt: "2021 Toyota RAV4 Adventure presented by Legend Motors Malawi",
+    description: "2021 Toyota RAV4 Adventure with 47,000 km, automatic transmission and 1,980cc engine. Publicly posted at MK135,000,000. Confirm current availability directly.",
+    featured: true,
+  },
+  {
+    id: "mercedes-benz-c200-2016",
+    year: 2016,
     make: "Mercedes-Benz",
-    model: "C-Class C 300",
-    price: 42800,
-    mileage: 18450,
+    model: "C200",
+    price: 65000000,
+    mileage: 92000,
     transmission: "Automatic",
-    fuel: "Hybrid",
+    fuel: "Petrol",
     body: "Saloon",
-    image:
-      "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=85",
-    imageAlt: "Modern silver Mercedes-Benz viewed from the front",
-    description:
-      "A contemporary saloon with a calm, premium feel and a thoughtfully designed interior. Confirm the exact vehicle specification before any real-world use.",
+    image: "https://img5.autoyas.com/971/571/1590892049715714.jpg",
+    imageAlt: "2016 Mercedes-Benz C200 presented by Legend Motors Malawi",
+    description: "2016 Mercedes-Benz C200 with 92,000 km, petrol and automatic transmission. Publicly posted at MK65,000,000 negotiable. Confirm availability and terms.",
     featured: true,
   },
   {
-    id: "audi-q5-premium-2023",
-    year: 2023,
-    make: "Audi",
-    model: "Q5 Premium",
-    price: 46750,
-    mileage: 11600,
+    id: "suzuki-escudo-2016",
+    year: 2016,
+    make: "Suzuki",
+    model: "Escudo (Vitara)",
+    price: 58000000,
+    mileage: 60000,
     transmission: "Automatic",
     fuel: "Petrol",
     body: "SUV",
-    image:
-      "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1200&q=85",
-    imageAlt: "Dark performance SUV parked against an urban backdrop",
-    description:
-      "A versatile premium SUV presented here as a sample listing. Equipment, condition, mileage and pricing must be replaced with verified details.",
+    image: "https://img4.autoyas.com/653/989/1589316866539899.jpg",
+    imageAlt: "2016 Suzuki Escudo Vitara presented by Legend Motors Malawi",
+    description: "2016 Suzuki Escudo (Vitara), 60,000 km, petrol, automatic and 1,600cc. Publicly posted at MK58,000,000 negotiable. Confirm availability directly.",
     featured: false,
   },
   {
-    id: "lexus-rx-350-2022",
-    year: 2022,
-    make: "Lexus",
-    model: "RX 350",
-    price: 43900,
-    mileage: 21100,
+    id: "toyota-voxy-2015",
+    year: 2015,
+    make: "Toyota",
+    model: "Voxy",
+    price: 50000000,
+    mileage: 42000,
+    transmission: "Automatic",
+    fuel: "Petrol",
+    body: "MPV",
+    image: "https://img3.autoyas.com/961/784/1591870769617842.jpg",
+    imageAlt: "2015 Toyota Voxy presented by Legend Motors Malawi",
+    description: "2015 Toyota Voxy with 42,000 km, petrol and automatic transmission. Publicly posted at MK50,000,000 negotiable. Confirm current availability.",
+    featured: false,
+  },
+  {
+    id: "honda-vezel-hybrid-2015",
+    year: 2015,
+    make: "Honda",
+    model: "Vezel Hybrid",
+    price: 34500000,
+    mileage: 64000,
     transmission: "Automatic",
     fuel: "Hybrid",
     body: "SUV",
-    image:
-      "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1200&q=85",
-    imageAlt: "Premium SUV shown in a clean outdoor setting",
-    description:
-      "A comfort-oriented SUV concept for the sample inventory. Demo imagery and vehicle data are illustrative rather than an offer for sale.",
-    featured: false,
-  },
-  {
-    id: "tesla-model-3-long-range-2023",
-    year: 2023,
-    make: "Tesla",
-    model: "Model 3 Long Range",
-    price: 38250,
-    mileage: 7900,
-    transmission: "Automatic",
-    fuel: "Electric",
-    body: "Saloon",
-    image:
-      "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1200&q=85",
-    imageAlt: "White electric sedan photographed from the front quarter",
-    description:
-      "An all-electric saloon sample listing with placeholder mileage and pricing. Replace this record with current, verified inventory data before launch.",
+    image: "https://img3.autoyas.com/324/484/1588934063244846.jpg",
+    imageAlt: "2015 Honda Vezel Hybrid presented by Legend Motors Malawi",
+    description: "2015 Honda Vezel Hybrid with 64,000 km, 1,500cc and automatic transmission. Publicly posted at MK34,500,000 negotiable. Confirm current availability.",
     featured: false,
   },
 ];
 
 export function formatDemoPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(price);
+  return `MK ${new Intl.NumberFormat("en-US").format(price)}`;
 }
 
 export function formatMileage(mileage: number): string {
-  return `${new Intl.NumberFormat("en-US").format(mileage)} mi`;
+  return `${new Intl.NumberFormat("en-US").format(mileage)} km`;
 }
