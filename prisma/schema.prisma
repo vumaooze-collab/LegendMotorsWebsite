@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  SERVICE
+  ARCHIVED
+}
+
+enum ExpenseType {
+  FUEL
+  REPAIRS
+  TRANSPORT
+  ADVERTISING
+  RENT
+  UTILITIES
+  SALARIES
+  MAINTENANCE
+  OTHER
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        RoleName @unique
+  description String?
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  passwordHash  String?
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  roleId        String?
+  role          Role?     @relation(fields: [roleId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+
+  @@index([roleId])
+  @@index([email])
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model BusinessSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Vehicle {
+  id             String        @id @default(cuid())
+  stockNumber    String        @unique
+  make           String
+  model          String
+  year           Int
+  registration   String?
+  vin            String?
+  mileage        Int
+  fuelType       String
+  transmission   String
+  colour         String?
+  condition      String?
+  status         VehicleStatus @default(AVAILABLE)
+  purchasePrice  Decimal?      @db.Decimal(18, 2)
+  sellingPrice   Decimal?      @db.Decimal(18, 2)
+  supplier       String?
+  dateAcquired   DateTime?
+  dateSold       DateTime?
+  description    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  vehicleImages  VehicleImage[]
+  vehicleDocuments VehicleDocument[]
+  sales          SaleItem[]
+}
+
+model VehicleImage {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model VehicleDocument {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  title     String
+  url       String
+  type      String?
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  enquiries   Enquiry[]
+  sales       Sale[]
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Enquiry {
+  id          String    @id @default(cuid())
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  vehicleName String?
+  notes       String?
+  status      String    @default("NEW")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Sale {
+  id             String     @id @default(cuid())
+  customerId     String?
+  customer       Customer?  @relation(fields: [customerId], references: [id])
+  saleNumber     String     @unique
+  status         String     @default("PENDING")
+  totalAmount    Decimal    @db.Decimal(18, 2)
+  depositAmount  Decimal?   @db.Decimal(18, 2)
+  balanceAmount  Decimal?   @db.Decimal(18, 2)
+  soldAt         DateTime   @default(now())
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  saleItems      SaleItem[]
+  payments       Payment[]
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+  unitPrice   Decimal  @db.Decimal(18, 2)
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+}
+
+model ExpenseCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expenses    Expense[]
+}
+
+model Expense {
+  id          String           @id @default(cuid())
+  categoryId  String?
+  category    ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  title       String
+  description String?
+  amount      Decimal          @db.Decimal(18, 2)
+  incurredOn  DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(18, 2)
+  method      String
+  reference   String?
+  paidAt      DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model InventoryTransaction {
+  id          String   @id @default(cuid())
+  vehicleId   String?
+  type        String
+  quantity    Int      @default(1)
+  amount      Decimal? @db.Decimal(18, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model SocialAccount {
+  id          String   @id @default(cuid())
+  platform    String
+  accountName String?
+  profileUrl  String?
+  isConnected Boolean  @default(false)
+  metadata    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AssistantConversation {
+  id        String   @id @default(cuid())
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  AssistantMessage[]
+}
+
+model AssistantMessage {
+  id          String                  @id @default(cuid())
+  conversationId String
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role        String
+  content     String
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+}
