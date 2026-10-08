@@ -45,7 +45,7 @@ function VehicleCard({
           </div>
           <div className="vehicle-card__price">
             {formatDemoPrice(vehicle.price)}
-            <small>demo price</small>
+            <small>public listing price</small>
           </div>
         </div>
         <div className="vehicle-card__specs" aria-label="Vehicle specifications">
