@@ -143,7 +143,7 @@ function VehicleDetailsDialog({
             </div>
             <p className="vehicle-dialog__description">{vehicle.description}</p>
             <p className="demo-price-note">
-              Demonstration listing only. Price, specification, condition and availability are not verified.
+              Publicly posted listing. Availability, condition and final pricing must be confirmed directly with Legend Motors.
             </p>
             <SocialShare title={vehicleName(vehicle)} text={`Ask Legend Motors about the ${vehicleName(vehicle)}.`} />
             <div className="vehicle-dialog__actions">
@@ -179,9 +179,9 @@ export function VehicleCatalog() {
       (!normalizedSearch || searchableText.includes(normalizedSearch)) &&
       (selectedMake === "all" || vehicle.make === selectedMake) &&
       (selectedPrice === "all" ||
-        (selectedPrice === "under-40000" && vehicle.price < 40000) ||
-        (selectedPrice === "40000-60000" && vehicle.price >= 40000 && vehicle.price <= 60000) ||
-        (selectedPrice === "over-60000" && vehicle.price > 60000)) &&
+        (selectedPrice === "under-40000000" && vehicle.price < 40000000) ||
+        (selectedPrice === "40000000-80000000" && vehicle.price >= 40000000 && vehicle.price <= 80000000) ||
+        (selectedPrice === "over-80000000" && vehicle.price > 80000000)) &&
       (selectedYear === "all" || vehicle.year.toString() === selectedYear) &&
       (selectedFuel === "all" || vehicle.fuel === selectedFuel) &&
       (selectedTransmission === "all" || vehicle.transmission === selectedTransmission)
@@ -208,11 +208,11 @@ export function VehicleCatalog() {
             </h2>
           </div>
           <p className="catalog-note">
-            A selection of demo listings to help you picture the collection. Vehicle details and pricing are illustrative.
+            Vehicle listings are sourced from public Legend Motors Malawi posts. Confirm availability, condition and final pricing directly with the dealership.
           </p>
         </div>
 
-        <div aria-label="Featured demo vehicles" className="featured-grid" id="featured-vehicles">
+        <div aria-label="Featured vehicles" className="featured-grid" id="featured-vehicles">
           {featuredVehicles.map((vehicle) => (
             <VehicleCard
               featured
@@ -226,17 +226,17 @@ export function VehicleCatalog() {
         <div className="inventory-block" id="inventory">
           <div className="inventory-heading">
             <div>
-              <p className="eyebrow">The full collection</p>
+              <p className="eyebrow">Current inventory</p>
               <h2 className="section-heading" id="inventory-heading">
                 Find your match.
               </h2>
             </div>
             <p aria-live="polite" className="inventory-count">
-              {matchingVehicles.length} demo {matchingVehicles.length === 1 ? "vehicle" : "vehicles"}
+              {matchingVehicles.length} available {matchingVehicles.length === 1 ? "vehicle" : "vehicles"}
             </p>
           </div>
 
-          <div aria-label="Filter demo vehicle inventory" className="filter-panel">
+          <div aria-label="Filter vehicle inventory" className="filter-panel">
             <div className="filter-field">
               <label htmlFor="vehicle-search">Search vehicles</label>
               <input
@@ -263,9 +263,9 @@ export function VehicleCatalog() {
               <label htmlFor="price-filter">Price</label>
               <select id="price-filter" onChange={(event) => setSelectedPrice(event.target.value)} value={selectedPrice}>
                 <option value="all">Any price</option>
-                <option value="under-40000">Under $40,000</option>
-                <option value="40000-60000">$40,000–$60,000</option>
-                <option value="over-60000">Over $60,000</option>
+                <option value="under-40000000">Under MK 40,000,000</option>
+                <option value="40000000-80000000">MK 40,000,000–MK 80,000,000</option>
+                <option value="over-80000000">Over MK 80,000,000</option>
               </select>
             </div>
             <div className="filter-field">
@@ -312,8 +312,8 @@ export function VehicleCatalog() {
               ))
             ) : (
               <div className="empty-state">
-                <h3>No demo vehicles match those filters</h3>
-                <p>Try a different search or reset the filters to see the full collection.</p>
+                <h3>No vehicles match those filters</h3>
+                <p>Try a different search or reset the filters to see the current inventory.</p>
                 <button className="text-link" onClick={resetFilters} type="button">
                   Reset search <span aria-hidden="true">&#8594;</span>
                 </button>
