@@ -20,7 +20,7 @@ export function SiteFooter() {
           <div>
             <FooterBrand />
             <p className="footer-about">
-              A considered place to explore your next car. Inventory and contact information on this preview are illustrative.
+              A professional digital showroom for vehicle discovery, sales enquiries, sourcing, trade-ins and customer support.
             </p>
           </div>
           <nav aria-label="Footer navigation">
@@ -29,7 +29,7 @@ export function SiteFooter() {
               <a href="#vehicles">Vehicles</a>
               <a href="#services">Services</a>
               <a href="#about">About</a>
-              <a href="#contact">Contact</a>
+              <a href="#business">Sales</a>\n              <a href="#contact">Contact</a>
             </div>
           </nav>
           <div>
@@ -43,7 +43,7 @@ export function SiteFooter() {
         </div>
         <div className="footer-bottom">
           <span>Copyright Legend Motors.</span>
-          <span>Demo inventory and sample pricing are not offers for sale.</span>
+          <span>Vehicle availability, pricing and specifications must be confirmed with Legend Motors.</span>
         </div>
       </div>
     </footer>
