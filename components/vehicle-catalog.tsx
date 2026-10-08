@@ -8,6 +8,7 @@ import {
   formatMileage,
   type Vehicle,
 } from "@/data/vehicles";
+import { SocialShare } from "@/components/social-share";
 
 function vehicleName(vehicle: Vehicle): string {
   return `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
@@ -144,6 +145,7 @@ function VehicleDetailsDialog({
             <p className="demo-price-note">
               Demonstration listing only. Price, specification, condition and availability are not verified.
             </p>
+            <SocialShare title={vehicleName(vehicle)} text={`Ask Legend Motors about the ${vehicleName(vehicle)}.`} />
             <div className="vehicle-dialog__actions">
               <a className="button button--dark" href="#contact" onClick={onClose}>
                 Enquire about this car <span aria-hidden="true">&#8594;</span>
