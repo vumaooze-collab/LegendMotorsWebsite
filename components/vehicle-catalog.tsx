@@ -2,15 +2,19 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import {
-  DEMO_VEHICLES,
-  formatDemoPrice,
-  formatMileage,
-  type Vehicle,
-} from "@/data/vehicles";
 
-function vehicleName(vehicle: Vehicle): string {
+import type { PublicVehicle } from "@/lib/inventory";
+
+function vehicleName(vehicle: PublicVehicle): string {
   return `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
+}
+
+function formatPrice(value: number, currency: string): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function VehicleCard({
@@ -18,20 +22,19 @@ function VehicleCard({
   featured = false,
   onViewDetails,
 }: {
-  vehicle: Vehicle;
+  vehicle: PublicVehicle;
   featured?: boolean;
-  onViewDetails: (vehicle: Vehicle) => void;
+  onViewDetails: (vehicle: PublicVehicle) => void;
 }) {
+  const primaryImage = vehicle.images.find((image) => image.isPrimary) ?? vehicle.images[0];
+  const altText = primaryImage?.altText ?? `${vehicle.make} ${vehicle.model}`;
+
   return (
     <article className="vehicle-card">
       <div className="vehicle-card__image">
-        <Image
-          alt={vehicle.imageAlt}
-          fill
-          unoptimized
-          sizes="(max-width: 720px) 100vw, (max-width: 1000px) 50vw, 400px"
-          src={vehicle.image}
-        />
+        {primaryImage ? (
+          <Image alt={altText} fill unoptimized sizes="(max-width: 720px) 100vw, (max-width: 1000px) 50vw, 400px" src={primaryImage.url} />
+        ) : <div aria-label="Vehicle image unavailable" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#68716d", background: "#e8ece9" }}>Image unavailable</div>}
         {featured && <span className="vehicle-card__badge">Featured</span>}
       </div>
       <div className="vehicle-card__body">
@@ -43,15 +46,15 @@ function VehicleCard({
             <span className="vehicle-card__year">{vehicle.year} model</span>
           </div>
           <div className="vehicle-card__price">
-            {formatDemoPrice(vehicle.price)}
-            <small>demo price</small>
+            {formatPrice(vehicle.price, vehicle.currency)}
+            <small>public listing price</small>
           </div>
         </div>
         <div className="vehicle-card__specs" aria-label="Vehicle specifications">
-          <span className="vehicle-card__spec">{formatMileage(vehicle.mileage)}</span>
+          <span className="vehicle-card__spec">{vehicle.mileage.toLocaleString()} km</span>
           <span className="vehicle-card__spec">{vehicle.transmission}</span>
-          <span className="vehicle-card__spec">{vehicle.fuel}</span>
-          <span className="vehicle-card__spec">{vehicle.body}</span>
+          <span className="vehicle-card__spec">{vehicle.fuelType}</span>
+          <span className="vehicle-card__spec">{vehicle.bodyType ?? "Vehicle"}</span>
         </div>
         <button
           aria-label={`View details for ${vehicleName(vehicle)}`}
@@ -71,7 +74,7 @@ function VehicleDetailsDialog({
   vehicle,
   onClose,
 }: {
-  vehicle: Vehicle | null;
+  vehicle: PublicVehicle | null;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -110,13 +113,15 @@ function VehicleDetailsDialog({
       {vehicle && (
         <>
           <div className="vehicle-dialog__image">
-            <Image
-              alt={vehicle.imageAlt}
-              fill
-              unoptimized
-              sizes="(max-width: 720px) 100vw, 760px"
-              src={vehicle.image}
-            />
+            {vehicle.images.length > 0 ? (
+              <Image
+                alt={vehicle.images.find((image) => image.isPrimary)?.altText ?? vehicle.images[0].altText ?? `${vehicle.make} ${vehicle.model}`}
+                fill
+                unoptimized
+                sizes="(max-width: 720px) 100vw, 760px"
+                src={(vehicle.images.find((image) => image.isPrimary) ?? vehicle.images[0]).url}
+              />
+            ) : <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#68716d", background: "#e8ece9" }}>Image unavailable</div>}
             <button
               aria-label="Close vehicle details"
               className="vehicle-dialog__close"
@@ -129,20 +134,22 @@ function VehicleDetailsDialog({
           <div className="vehicle-dialog__content">
             <div className="vehicle-dialog__top">
               <div>
-                <p className="eyebrow">Demo vehicle details</p>
+                <p className="eyebrow">Vehicle details</p>
                 <h2 id="vehicle-dialog-title">{vehicleName(vehicle)}</h2>
               </div>
-              <span className="vehicle-dialog__price">{formatDemoPrice(vehicle.price)}</span>
+              <span className="vehicle-dialog__price">{formatPrice(vehicle.price, vehicle.currency)}</span>
             </div>
             <div className="vehicle-dialog__specs">
-              <span>{formatMileage(vehicle.mileage)}</span>
+              <span>{vehicle.mileage.toLocaleString()} km</span>
               <span>{vehicle.transmission}</span>
-              <span>{vehicle.fuel}</span>
-              <span>{vehicle.body}</span>
+              <span>{vehicle.fuelType}</span>
+              <span>{vehicle.bodyType ?? "Vehicle"}</span>
             </div>
-            <p className="vehicle-dialog__description">{vehicle.description}</p>
+            <p className="vehicle-dialog__description">
+              {vehicle.description ?? "Please contact Legend Motors for the latest condition and specification details."}
+            </p>
             <p className="demo-price-note">
-              Demonstration listing only. Price, specification, condition and availability are not verified.
+              Listing status and availability are confirmed by the dealership before publication. Final pricing and condition must be confirmed directly with Legend Motors Malawi.
             </p>
             <div className="vehicle-dialog__actions">
               <a className="button button--dark" href="#contact" onClick={onClose}>
@@ -166,25 +173,50 @@ export function VehicleCatalog() {
   const [selectedYear, setSelectedYear] = useState("all");
   const [selectedFuel, setSelectedFuel] = useState("all");
   const [selectedTransmission, setSelectedTransmission] = useState("all");
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const makes = [...new Set(DEMO_VEHICLES.map((vehicle) => vehicle.make))].sort();
-  const years = [...new Set(DEMO_VEHICLES.map((vehicle) => vehicle.year))].sort((a, b) => b - a);
-  const featuredVehicles = DEMO_VEHICLES.filter((vehicle) => vehicle.featured);
-  const normalizedSearch = search.trim().toLowerCase();
-  const matchingVehicles = DEMO_VEHICLES.filter((vehicle) => {
-    const searchableText = `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.body} ${vehicle.fuel} ${vehicle.transmission}`.toLowerCase();
-    return (
-      (!normalizedSearch || searchableText.includes(normalizedSearch)) &&
-      (selectedMake === "all" || vehicle.make === selectedMake) &&
-      (selectedPrice === "all" ||
-        (selectedPrice === "under-40000" && vehicle.price < 40000) ||
-        (selectedPrice === "40000-60000" && vehicle.price >= 40000 && vehicle.price <= 60000) ||
-        (selectedPrice === "over-60000" && vehicle.price > 60000)) &&
-      (selectedYear === "all" || vehicle.year.toString() === selectedYear) &&
-      (selectedFuel === "all" || vehicle.fuel === selectedFuel) &&
-      (selectedTransmission === "all" || vehicle.transmission === selectedTransmission)
-    );
-  });
+  const [selectedVehicle, setSelectedVehicle] = useState<PublicVehicle | null>(null);
+  const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    if (selectedMake !== "all") params.set("make", selectedMake);
+    if (selectedYear !== "all") params.set("year", selectedYear);
+    if (selectedFuel !== "all") params.set("fuelType", selectedFuel);
+    if (selectedTransmission !== "all") params.set("transmission", selectedTransmission);
+    if (selectedPrice === "under-40000000") params.set("maxPrice", "39999999.99");
+    if (selectedPrice === "40000000-80000000") {
+      params.set("minPrice", "40000000");
+      params.set("maxPrice", "80000000");
+    }
+    if (selectedPrice === "over-80000000") params.set("minPrice", "80000000.01");
+
+    fetch(`/api/vehicles${params.size ? `?${params.toString()}` : ""}`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Unable to load listings.");
+        return response.json();
+      })
+      .then((result) => {
+        if (!active) return;
+        setVehicles(result.vehicles ?? []);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setVehicles([]);
+        setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [search, selectedMake, selectedPrice, selectedYear, selectedFuel, selectedTransmission]);
+
+  const makes = [...new Set(vehicles.map((vehicle) => vehicle.make))].sort();
+  const years = [...new Set(vehicles.map((vehicle) => vehicle.year))].sort((a, b) => b - a);
+  const featuredVehicles = vehicles.filter((vehicle) => vehicle.featured);
+  const matchingVehicles = vehicles;
 
   function resetFilters() {
     setSearch("");
@@ -206,20 +238,23 @@ export function VehicleCatalog() {
             </h2>
           </div>
           <p className="catalog-note">
-            A selection of demo listings to help you picture the collection. Vehicle details and pricing are illustrative.
+            Inventory is delivered through the dealership inventory system and only includes published, public-facing vehicles.
           </p>
         </div>
 
-        <div aria-label="Featured demo vehicles" className="featured-grid" id="featured-vehicles">
-          {featuredVehicles.map((vehicle) => (
-            <VehicleCard
-              featured
-              key={vehicle.id}
-              onViewDetails={setSelectedVehicle}
-              vehicle={vehicle}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="inventory-block">
+            <p className="inventory-count">Loading vehicles…</p>
+          </div>
+        ) : null}
+
+        {!loading && featuredVehicles.length > 0 ? (
+          <div aria-label="Featured vehicles" className="featured-grid" id="featured-vehicles">
+            {featuredVehicles.map((vehicle) => (
+              <VehicleCard featured key={vehicle.id} onViewDetails={setSelectedVehicle} vehicle={vehicle} />
+            ))}
+          </div>
+        ) : null}
 
         <div className="inventory-block" id="inventory">
           <div className="inventory-heading">
@@ -230,11 +265,11 @@ export function VehicleCatalog() {
               </h2>
             </div>
             <p aria-live="polite" className="inventory-count">
-              {matchingVehicles.length} demo {matchingVehicles.length === 1 ? "vehicle" : "vehicles"}
+              {matchingVehicles.length} {matchingVehicles.length === 1 ? "vehicle" : "vehicles"}
             </p>
           </div>
 
-          <div aria-label="Filter demo vehicle inventory" className="filter-panel">
+          <div aria-label="Filter vehicle inventory" className="filter-panel">
             <div className="filter-field">
               <label htmlFor="vehicle-search">Search vehicles</label>
               <input
@@ -261,9 +296,9 @@ export function VehicleCatalog() {
               <label htmlFor="price-filter">Price</label>
               <select id="price-filter" onChange={(event) => setSelectedPrice(event.target.value)} value={selectedPrice}>
                 <option value="all">Any price</option>
-                <option value="under-40000">Under $40,000</option>
-                <option value="40000-60000">$40,000–$60,000</option>
-                <option value="over-60000">Over $60,000</option>
+                <option value="under-40000000">Under MWK 40,000,000</option>
+                <option value="40000000-80000000">MWK 40,000,000–80,000,000</option>
+                <option value="over-80000000">Over MWK 80,000,000</option>
               </select>
             </div>
             <div className="filter-field">
@@ -281,9 +316,11 @@ export function VehicleCatalog() {
               <label htmlFor="fuel-filter">Fuel type</label>
               <select id="fuel-filter" onChange={(event) => setSelectedFuel(event.target.value)} value={selectedFuel}>
                 <option value="all">All fuel types</option>
-                <option value="Electric">Electric</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Petrol">Petrol</option>
+                {[...new Set(vehicles.map((vehicle) => vehicle.fuelType))].map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="filter-field">
@@ -294,8 +331,11 @@ export function VehicleCatalog() {
                 value={selectedTransmission}
               >
                 <option value="all">Any transmission</option>
-                <option value="Automatic">Automatic</option>
-                <option value="Manual">Manual</option>
+                {[...new Set(vehicles.map((vehicle) => vehicle.transmission))].map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
               </select>
             </div>
             <button className="filter-reset" onClick={resetFilters} type="button">
@@ -310,8 +350,8 @@ export function VehicleCatalog() {
               ))
             ) : (
               <div className="empty-state">
-                <h3>No demo vehicles match those filters</h3>
-                <p>Try a different search or reset the filters to see the full collection.</p>
+                <h3>No vehicles match those filters</h3>
+                <p>Try a different search or reset the filters to see all available stock.</p>
                 <button className="text-link" onClick={resetFilters} type="button">
                   Reset search <span aria-hidden="true">&#8594;</span>
                 </button>

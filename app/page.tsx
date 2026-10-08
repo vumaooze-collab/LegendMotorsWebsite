@@ -1,4 +1,5 @@
 import { AboutSection, EnquiryBanner, ServicesSection, WhyChooseSection } from "@/components/brand-sections";
+import { BusinessActions } from "@/components/business-actions";
 import { ContactSection } from "@/components/contact-section";
 import { HeroSection, QuickShoppingBar } from "@/components/hero-section";
 import { SiteFooter } from "@/components/site-footer";
@@ -17,6 +18,7 @@ export default function Home() {
         <QuickShoppingBar />
         <VehicleCatalog />
         <ServicesSection />
+        <BusinessActions />
         <WhyChooseSection />
         <AboutSection />
         <EnquiryBanner />

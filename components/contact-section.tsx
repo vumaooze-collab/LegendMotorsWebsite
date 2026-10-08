@@ -1,90 +1,71 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { BUSINESS, whatsappUrl } from "@/data/business";
 
 export function ContactSection() {
-  const [submitted, setSubmitted] = useState(false);
+  const [sent, setSent] = useState(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("name") || "");
+    const phone = String(data.get("phone") || "");
+    const interest = String(data.get("interest") || "vehicle");
+    const message = String(data.get("message") || "");
+    const text = [
+      "Hello Legend Motors, I would like to make an enquiry.",
+      `Name: ${name}`,
+      `Phone: ${phone}`,
+      `Interest: ${interest}`,
+      `Message: ${message || "I would like more information."}`,
+    ].join("\n");
+    window.open(whatsappUrl(text), "_blank", "noopener,noreferrer");
+    setSent(true);
   }
 
   return (
     <section aria-labelledby="contact-heading" className="contact-section" id="contact">
       <div className="section-shell contact-layout">
         <div className="contact-copy">
-          <p className="eyebrow">Let&apos;s talk cars</p>
-          <h2 className="section-heading" id="contact-heading">
-            Your next move starts with a conversation.
-          </h2>
+          <p className="eyebrow">Legend Motors sales desk</p>
+          <h2 className="section-heading" id="contact-heading">Ready to find the right car?</h2>
           <p>
-            Ask about a vehicle, discuss finance options or tell us what you are looking for. Verified business contact details will be added here before launch.
+            Speak directly with Legend Motors about a vehicle, finance, sourcing or trade-in.
+            Your enquiry is sent to the dealership through WhatsApp.
           </p>
           <dl className="contact-details">
-            <div className="contact-detail">
-              <dt>Phone</dt>
-              <dd>Contact number to be confirmed</dd>
-            </div>
-            <div className="contact-detail">
-              <dt>Email</dt>
-              <dd>Email address to be confirmed</dd>
-            </div>
-            <div className="contact-detail">
-              <dt>Showroom</dt>
-              <dd>Location details to be confirmed</dd>
-            </div>
+            <div className="contact-detail"><dt>Phone / WhatsApp</dt><dd><a href={`tel:+${BUSINESS.phoneInternational}`}>{BUSINESS.phoneDisplay}</a></dd></div>
+            <div className="contact-detail"><dt>Email</dt><dd><a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a></dd></div>
+            <div className="contact-detail"><dt>Showroom</dt><dd>{BUSINESS.address}</dd></div>
+            <div className="contact-detail"><dt>Hours</dt><dd>{BUSINESS.hours}</dd></div>
           </dl>
-          <a
-            className="whatsapp-link"
-            href="https://wa.me/?text=Hello%20Legend%20Motors%2C%20I%27d%20like%20to%20make%20a%20vehicle%20enquiry."
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <span aria-hidden="true" className="whatsapp-mark">
-              W
-            </span>
-            Start a WhatsApp enquiry <span aria-hidden="true">&#8599;</span>
+          <a className="whatsapp-link" href={whatsappUrl("Hello Legend Motors, I would like help finding a vehicle.")} rel="noopener noreferrer" target="_blank">
+            <span aria-hidden="true" className="whatsapp-mark">W</span>
+            Chat with sales on WhatsApp <span aria-hidden="true">↗</span>
           </a>
-          <span className="whatsapp-note">Business WhatsApp number must be configured before launch.</span>
         </div>
 
         <form className="enquiry-form" onSubmit={handleSubmit}>
-          <h3>Send an enquiry</h3>
-          <p className="form-note">
-            Demo form only. Your details stay in this browser and are not sent or stored.
-          </p>
+          <h3>Send a vehicle enquiry</h3>
+          <p className="form-note">Complete the form and we will open a WhatsApp conversation with the dealership.</p>
           <div className="form-grid">
-            <div className="form-field">
-              <label htmlFor="enquiry-name">Your name</label>
-              <input autoComplete="name" id="enquiry-name" name="name" required />
-            </div>
-            <div className="form-field">
-              <label htmlFor="enquiry-email">Email address</label>
-              <input autoComplete="email" id="enquiry-email" name="email" required type="email" />
-            </div>
+            <div className="form-field"><label htmlFor="enquiry-name">Your name</label><input autoComplete="name" id="enquiry-name" name="name" required /></div>
+            <div className="form-field"><label htmlFor="enquiry-phone">Phone / WhatsApp</label><input autoComplete="tel" id="enquiry-phone" name="phone" required type="tel" /></div>
             <div className="form-field form-field--wide">
-              <label htmlFor="enquiry-interest">What are you interested in?</label>
+              <label htmlFor="enquiry-interest">What do you need?</label>
               <select defaultValue="vehicle" id="enquiry-interest" name="interest">
-                <option value="vehicle">A vehicle in the collection</option>
-                <option value="finance">Finance conversation</option>
-                <option value="part-exchange">Part exchange enquiry</option>
-                <option value="other">Something else</option>
+                <option value="vehicle">Buy a vehicle</option>
+                <option value="finance">Finance enquiry</option>
+                <option value="trade-in">Sell / trade in my vehicle</option>
+                <option value="source">Source a vehicle</option>
+                <option value="service">Service / parts enquiry</option>
               </select>
             </div>
-            <div className="form-field form-field--wide">
-              <label htmlFor="enquiry-message">Your message</label>
-              <textarea id="enquiry-message" name="message" placeholder="Tell us a little about what you are looking for." />
-            </div>
+            <div className="form-field form-field--wide"><label htmlFor="enquiry-message">Your message</label><textarea id="enquiry-message" name="message" placeholder="Tell us the make, model, budget or service you need." /></div>
           </div>
-          <button className="button button--dark form-submit" type="submit">
-            Preview enquiry <span aria-hidden="true">&#8594;</span>
-          </button>
-          {submitted && (
-            <p className="form-status" role="status">
-              Preview complete. Nothing was sent. Connect a verified contact destination to enable enquiries.
-            </p>
-          )}
+          <button className="button button--charcoal form-submit" type="submit">Send to WhatsApp <span aria-hidden="true">→</span></button>
+          {sent && <p className="form-status" role="status">WhatsApp opened with your enquiry. Continue the conversation there.</p>}
         </form>
       </div>
     </section>

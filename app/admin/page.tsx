@@ -1,17 +1,23 @@
 import Link from "next/link";
 
-import { formatDemoPrice } from "@/data/vehicles";
-import { calculateInventorySummary } from "@/lib/finance";
-import { getInventorySnapshot } from "@/lib/inventory";
+import { listInventoryVehicles } from "@/lib/inventory";
 
-export default function AdminDashboardPage() {
-  const { summary, vehicles } = getInventorySnapshot();
-  const financeSummary = calculateInventorySummary(
-    vehicles.map((vehicle) => ({
-      purchasePrice: vehicle.purchasePrice,
-      sellingPrice: vehicle.sellingPrice,
-    })),
-  );
+export const dynamic = "force-dynamic";
+
+function formatPrice(price: number) {
+  return `MWK ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(price)}`;
+}
+
+export default async function AdminDashboardPage() {
+  const vehicles = await listInventoryVehicles();
+  const summary = {
+    total: vehicles.length,
+    available: vehicles.filter((vehicle) => vehicle.status === "AVAILABLE").length,
+    reserved: vehicles.filter((vehicle) => vehicle.status === "RESERVED").length,
+    sold: vehicles.filter((vehicle) => vehicle.status === "SOLD").length,
+    published: vehicles.filter((vehicle) => vehicle.published).length,
+    inventoryValue: vehicles.filter((vehicle) => vehicle.status !== "SOLD" && vehicle.status !== "ARCHIVED").reduce((total, vehicle) => total + vehicle.price, 0),
+  };
 
   return (
     <main style={{ padding: "32px 24px 80px", background: "#f5f7f5" }}>
@@ -35,12 +41,12 @@ export default function AdminDashboardPage() {
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginBottom: 28 }}>
           {([
-            ["Available vehicles", summary.available, "#111827"],
+            ["Total vehicles", summary.total, "#111827"],
+            ["Available vehicles", summary.available, "#0f766e"],
             ["Reserved vehicles", summary.reserved, "#7c3aed"],
-            ["Sold this month", summary.sold, "#0f766e"],
-            ["Inventory value", formatDemoPrice(financeSummary.inventoryValue), "#f59e0b"],
-            ["Revenue", formatDemoPrice(financeSummary.potentialSalesValue), "#2563eb"],
-            ["Potential profit", formatDemoPrice(financeSummary.potentialProfit), "#16a34a"],
+            ["Sold vehicles", summary.sold, "#a33a25"],
+            ["Published vehicles", summary.published, "#2563eb"],
+            ["Current inventory value", formatPrice(summary.inventoryValue), "#f59e0b"],
           ] as Array<[string, string | number, string]>).map(([label, value, color]) => (
             <article key={label} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 18, padding: 20, boxShadow: "0 10px 30px rgba(15,23,42,0.04)" }}>
               <p style={{ margin: 0, color: "#68716d", fontSize: 13, fontWeight: 600 }}>{label}</p>
@@ -69,8 +75,8 @@ export default function AdminDashboardPage() {
                   <th style={{ padding: "10px 12px" }}>Vehicle</th>
                   <th style={{ padding: "10px 12px" }}>Status</th>
                   <th style={{ padding: "10px 12px" }}>Mileage</th>
-                  <th style={{ padding: "10px 12px" }}>Cost</th>
-                  <th style={{ padding: "10px 12px" }}>Selling</th>
+                  <th style={{ padding: "10px 12px" }}>Price</th>
+                  <th style={{ padding: "10px 12px" }}>Published</th>
                 </tr>
               </thead>
               <tbody>
@@ -78,9 +84,9 @@ export default function AdminDashboardPage() {
                   <tr key={vehicle.id} style={{ borderTop: "1px solid #eef0f1" }}>
                     <td style={{ padding: "12px", fontWeight: 700 }}>{vehicle.make} {vehicle.model}</td>
                     <td style={{ padding: "12px" }}>{vehicle.status}</td>
-                    <td style={{ padding: "12px" }}>{vehicle.mileage.toLocaleString()} mi</td>
-                    <td style={{ padding: "12px" }}>{formatDemoPrice(vehicle.purchasePrice)}</td>
-                    <td style={{ padding: "12px" }}>{formatDemoPrice(vehicle.sellingPrice)}</td>
+                    <td style={{ padding: "12px" }}>{vehicle.mileage.toLocaleString()} km</td>
+                    <td style={{ padding: "12px" }}>{formatPrice(vehicle.price)}</td>
+                    <td style={{ padding: "12px" }}>{vehicle.published ? "Yes" : "No"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -18,17 +18,17 @@ export function HeroSection() {
         <p className="eyebrow eyebrow--light">Welcome to Legend Motors</p>
         <h1 id="hero-heading">Find your next car.</h1>
         <p className="hero__copy">
-          Explore the cars, compare the details, and find the one that fits your life.
+          Browse available vehicles, share a listing, or speak directly with our sales team about your next car.
         </p>
         <div className="hero__actions">
           <a className="button button--orange" href="#vehicles">
             Browse vehicles <span aria-hidden="true">&#8594;</span>
           </a>
-          <a className="button button--outline-light" href="#contact">
-            Talk to us
+          <a className="button button--outline-light" href="#business">
+            Talk to sales
           </a>
         </div>
-        <p className="hero__note">Demo vehicles shown. Details and prices are illustrative.</p>
+        <p className="hero__note">Vehicle availability and pricing are confirmed directly by Legend Motors.</p>
       </div>
       <span className="hero__caption">Vehicle photography for demonstration purposes</span>
     </section>

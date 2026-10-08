@@ -1720,3 +1720,111 @@ img {
     transition-duration: 0.01ms !important;
   }
 }
+
+.business-actions {
+  padding: 88px 0;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+}
+.business-actions__header {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 48px;
+  align-items: end;
+}
+.business-actions__header > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.business-actions__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 32px;
+}
+.business-action {
+  min-height: 245px;
+  border: 1px solid var(--line);
+  padding: 24px;
+  background: var(--white);
+}
+.business-action__mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--orange);
+  color: var(--orange-hover);
+  font-size: 10px;
+  font-weight: 850;
+}
+.business-action h3 {
+  margin: 28px 0 8px;
+  font-size: 17px;
+}
+.business-action p {
+  min-height: 62px;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.business-actions__contact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 18px;
+  padding: 20px 24px;
+  background: var(--charcoal);
+  color: var(--white);
+}
+.business-actions__contact div {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.business-actions__contact strong { color: var(--orange); }
+.business-actions__contact span { color: rgb(255 255 255 / 78%); font-size: 12px; }
+.social-share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+  border-top: 1px solid var(--line);
+  padding-top: 15px;
+}
+.social-share span {
+  margin-right: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+.social-share a,
+.social-share button {
+  border: 1px solid #d9dfdb;
+  padding: 7px 9px;
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+}
+.social-share a:hover,
+.social-share button:hover {
+  border-color: var(--orange);
+  color: var(--orange-hover);
+}
+@media (max-width: 900px) {
+  .business-actions__header { grid-template-columns: 1fr; gap: 16px; }
+  .business-actions__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .business-actions { padding: 64px 0; }
+  .business-actions__grid { grid-template-columns: 1fr; }
+  .business-actions__contact { align-items: flex-start; flex-direction: column; }
+}
