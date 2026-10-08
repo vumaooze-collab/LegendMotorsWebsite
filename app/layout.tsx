@@ -18,11 +18,11 @@ export const metadata: Metadata = {
     template: "%s | Legend Motors",
   },
   description:
-    "Explore the Legend Motors vehicle collection, compare demo listings, and enquire about your next car.",
+    "Legend Motors Malawi — explore vehicles, enquire about sales, sourcing, finance and trade-ins.",
   openGraph: {
     title: "Legend Motors | Find your next car",
     description:
-      "Explore the Legend Motors vehicle collection and enquire about your next car.",
+      "Explore vehicles and connect directly with Legend Motors Malawi sales.",
     type: "website",
   },
 };
