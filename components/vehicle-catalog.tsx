@@ -155,6 +155,9 @@ function VehicleDetailsDialog({
               <a className="button button--dark" href="/#contact" onClick={onClose}>
                 Enquire about this car <span aria-hidden="true">&#8594;</span>
               </a>
+              <a className="button button--outline-dark" href={`/vehicles/${vehicle.id}`} onClick={onClose}>
+                Full vehicle page
+              </a>
               <button className="button button--outline-dark" onClick={onClose} type="button">
                 <span className="dialog-close-label">Back to vehicles</span>
               </button>
@@ -176,6 +179,7 @@ export function VehicleCatalog() {
   const [selectedVehicle, setSelectedVehicle] = useState<PublicVehicle | null>(null);
   const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -192,6 +196,8 @@ export function VehicleCatalog() {
     }
     if (selectedPrice === "over-80000000") params.set("minPrice", "80000000.01");
 
+    setLoading(true);
+    setLoadError(false);
     fetch(`/api/vehicles${params.size ? `?${params.toString()}` : ""}`)
       .then((response) => {
         if (!response.ok) throw new Error("Unable to load listings.");
@@ -200,12 +206,14 @@ export function VehicleCatalog() {
       .then((result) => {
         if (!active) return;
         setVehicles(result.vehicles ?? []);
-        setLoading(false);
       })
       .catch(() => {
         if (!active) return;
         setVehicles([]);
-        setLoading(false);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
 
     return () => {
@@ -344,7 +352,12 @@ export function VehicleCatalog() {
           </div>
 
           <div aria-labelledby="inventory-heading" className="inventory-grid">
-            {matchingVehicles.length > 0 ? (
+            {loadError ? (
+              <div className="empty-state" role="alert">
+                <h3>Vehicle listings are temporarily unavailable</h3>
+                <p>Please try again shortly or contact Legend Motors directly.</p>
+              </div>
+            ) : matchingVehicles.length > 0 ? (
               matchingVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} onViewDetails={setSelectedVehicle} vehicle={vehicle} />
               ))
