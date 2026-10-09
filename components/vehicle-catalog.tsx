@@ -152,7 +152,7 @@ function VehicleDetailsDialog({
               Listing status and availability are confirmed by the dealership before publication. Final pricing and condition must be confirmed directly with Legend Motors Malawi.
             </p>
             <div className="vehicle-dialog__actions">
-              <a className="button button--dark" href="#contact" onClick={onClose}>
+              <a className="button button--dark" href="/#contact" onClick={onClose}>
                 Enquire about this car <span aria-hidden="true">&#8594;</span>
               </a>
               <button className="button button--outline-dark" onClick={onClose} type="button">
