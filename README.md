@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Legend Motors Malawi
 
-## Getting Started
+A full-stack dealership website and operations dashboard built with Next.js, React, TypeScript, Prisma, and PostgreSQL.
 
-First, run the development server:
+## Main features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Public dealership homepage, vehicle catalog, search and filters.
+- Vehicle details pages and enquiry/contact links.
+- PostgreSQL-backed inventory with publication and availability states.
+- Admin login with role-based authorization and session cookies.
+- Admin inventory create/edit, image URL management, publish/unpublish, status changes, and audit logging.
+- Dashboard areas for customers, expenses, inventory, reports, sales, and users.
+
+## Run locally
+
+Requirements: Node.js 22 or newer, npm, and PostgreSQL 16 or compatible PostgreSQL.
+
+```powershell
+npm ci
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create a private `.env` file in the project root:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```dotenv
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/legendmotors_dev?schema=public"
+INITIAL_ADMIN_EMAIL="your-admin-email@example.com"
+INITIAL_ADMIN_PASSWORD="use-a-unique-password-at-least-8-characters"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use the credentials and database name for your own environment. Never commit `.env` or share secrets.
 
-## Learn More
+For a brand-new empty development database, apply the schema and create the initial administrator:
 
-To learn more about Next.js, take a look at the following resources:
+```powershell
+npx prisma validate
+npx prisma generate
+npx prisma db push
+npm run auth:bootstrap
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+If the database already contains data, back it up and inspect the schema before running `db push`. This repository currently does not contain Prisma Migrate migration files.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Start the app:
 
-## Deploy on Vercel
+```powershell
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open http://localhost:3000. Sign in at `/login`; the dashboard is at `/admin`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Verify before release
+
+```powershell
+npm run lint
+npx tsc --noEmit
+npm test
+npm run build
+```
+
+## Deployment
+
+This is a **server-rendered Next.js application**, not a static-only website. GitHub Pages cannot run its API routes or Prisma/PostgreSQL backend. Deploy the full app to Vercel or another Node.js-compatible Next.js host and attach a managed PostgreSQL database.
+
+Read [docs/deployment.md](docs/deployment.md) for environment variables, safe first-time schema setup, administrator bootstrap, and the release checklist.
+
+## Important current limitation
+
+The admin inventory interface stores externally hosted vehicle image URLs and metadata; it does not upload image files into persistent storage. Use a trusted HTTPS image host or implement object storage before offering direct photo uploads.

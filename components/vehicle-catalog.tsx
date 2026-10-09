@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import type { PublicVehicle } from "@/lib/inventory";
@@ -152,8 +153,11 @@ function VehicleDetailsDialog({
               Listing status and availability are confirmed by the dealership before publication. Final pricing and condition must be confirmed directly with Legend Motors Malawi.
             </p>
             <div className="vehicle-dialog__actions">
-              <a className="button button--dark" href="#contact" onClick={onClose}>
+              <Link className="button button--dark" href="/#contact" onClick={onClose}>
                 Enquire about this car <span aria-hidden="true">&#8594;</span>
+              </Link>
+              <a className="button button--outline-dark" href={`/vehicles/${vehicle.id}`} onClick={onClose}>
+                Full vehicle page
               </a>
               <button className="button button--outline-dark" onClick={onClose} type="button">
                 <span className="dialog-close-label">Back to vehicles</span>
@@ -176,6 +180,7 @@ export function VehicleCatalog() {
   const [selectedVehicle, setSelectedVehicle] = useState<PublicVehicle | null>(null);
   const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -199,13 +204,16 @@ export function VehicleCatalog() {
       })
       .then((result) => {
         if (!active) return;
+        setLoadError(false);
         setVehicles(result.vehicles ?? []);
-        setLoading(false);
       })
       .catch(() => {
         if (!active) return;
         setVehicles([]);
-        setLoading(false);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
 
     return () => {
@@ -344,7 +352,12 @@ export function VehicleCatalog() {
           </div>
 
           <div aria-labelledby="inventory-heading" className="inventory-grid">
-            {matchingVehicles.length > 0 ? (
+            {loadError ? (
+              <div className="empty-state" role="alert">
+                <h3>Vehicle listings are temporarily unavailable</h3>
+                <p>Please try again shortly or contact Legend Motors directly.</p>
+              </div>
+            ) : matchingVehicles.length > 0 ? (
               matchingVehicles.map((vehicle) => (
                 <VehicleCard key={vehicle.id} onViewDetails={setSelectedVehicle} vehicle={vehicle} />
               ))

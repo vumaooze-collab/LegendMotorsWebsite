@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import type { PublicVehicle } from "@/lib/inventory";
 
 type VehiclePageProps = {
@@ -42,31 +44,39 @@ export default function VehicleDetailsPage({ params }: VehiclePageProps) {
 
     if (loading) {
         return (
-            <main className="vehicle-details-page">
-                <div className="vehicle-details-state">
-                    Loading vehicle details...
-                </div>
-            </main>
+            <>
+                <SiteHeader />
+                <main className="vehicle-details-page">
+                    <div className="vehicle-details-state">
+                        Loading vehicle details...
+                    </div>
+                </main>
+                <SiteFooter />
+            </>
         );
     }
 
     if (error || !vehicle) {
         return (
-            <main className="vehicle-details-page">
-                <div className="vehicle-details-state">
-                    <h1>Vehicle not found</h1>
-                    <p>This vehicle may no longer be available.</p>
-                    <Link className="button button--orange" href="/vehicles">
-                        Back to vehicles
-                    </Link>
-                </div>
-            </main>
+            <>
+                <SiteHeader />
+                <main className="vehicle-details-page">
+                    <div className="vehicle-details-state">
+                        <h1>Vehicle not found</h1>
+                        <p>This vehicle may no longer be available.</p>
+                        <Link className="button button--orange" href="/vehicles">
+                            Back to vehicles
+                        </Link>
+                    </div>
+                </main>
+                <SiteFooter />
+            </>
         );
     }
 
     const primaryImage =
-        vehicle.images.find((image) => image.isPrimary)?.url ??
-        vehicle.images[0]?.url;
+        vehicle.images.find((image) => image.isPrimary) ??
+        vehicle.images[0];
 
     const title = [vehicle.year, vehicle.make, vehicle.model]
         .filter(Boolean)
@@ -79,7 +89,9 @@ export default function VehicleDetailsPage({ params }: VehiclePageProps) {
     );
 
     return (
-        <main className="vehicle-details-page">
+        <>
+            <SiteHeader />
+            <main className="vehicle-details-page">
             <section className="vehicle-details">
                 <div className="vehicle-details__top">
                     <Link className="vehicle-details__back" href="/vehicles">
@@ -95,8 +107,8 @@ export default function VehicleDetailsPage({ params }: VehiclePageProps) {
                     <div className="vehicle-details__media">
                         {primaryImage ? (
                             <Image
-                                src={primaryImage}
-                                alt={vehicle.images[0]?.altText ?? title}
+                                src={primaryImage.url}
+                                alt={primaryImage.altText ?? title}
                                 width={1200}
                                 height={800}
                                 className="vehicle-details__image"
@@ -200,6 +212,8 @@ export default function VehicleDetailsPage({ params }: VehiclePageProps) {
                     </div>
                 )}
             </section>
-        </main>
+            </main>
+            <SiteFooter />
+        </>
     );
 }
