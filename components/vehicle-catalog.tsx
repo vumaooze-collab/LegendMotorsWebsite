@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import type { PublicVehicle } from "@/lib/inventory";
@@ -152,9 +153,9 @@ function VehicleDetailsDialog({
               Listing status and availability are confirmed by the dealership before publication. Final pricing and condition must be confirmed directly with Legend Motors Malawi.
             </p>
             <div className="vehicle-dialog__actions">
-              <a className="button button--dark" href="/#contact" onClick={onClose}>
+              <Link className="button button--dark" href="/#contact" onClick={onClose}>
                 Enquire about this car <span aria-hidden="true">&#8594;</span>
-              </a>
+              </Link>
               <a className="button button--outline-dark" href={`/vehicles/${vehicle.id}`} onClick={onClose}>
                 Full vehicle page
               </a>
@@ -196,8 +197,6 @@ export function VehicleCatalog() {
     }
     if (selectedPrice === "over-80000000") params.set("minPrice", "80000000.01");
 
-    setLoading(true);
-    setLoadError(false);
     fetch(`/api/vehicles${params.size ? `?${params.toString()}` : ""}`)
       .then((response) => {
         if (!response.ok) throw new Error("Unable to load listings.");
@@ -205,6 +204,7 @@ export function VehicleCatalog() {
       })
       .then((result) => {
         if (!active) return;
+        setLoadError(false);
         setVehicles(result.vehicles ?? []);
       })
       .catch(() => {
