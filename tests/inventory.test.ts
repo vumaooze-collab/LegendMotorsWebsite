@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { hasPermission } from "@/lib/auth/authorization";
 import {
+  addImageSchema,
   createVehicleSchema,
   filterPublicVehicles,
   parsePublicationInput,
@@ -59,12 +60,24 @@ test("vehicle create validation accepts valid required fields and default option
   assert.equal(parsed.images[0].displayOrder, 0);
 });
 
+test("vehicle can be created before the client supplies photographs", () => {
+  const parsed = createVehicleSchema.parse({ ...validVehicle, images: undefined });
+  assert.deepEqual(parsed.images, []);
+});
+
+test("vehicle image records require a valid HTTPS URL", () => {
+  assert.equal(addImageSchema.safeParse({ url: "https://images.example.test/car.webp" }).success, true);
+  assert.equal(addImageSchema.safeParse({ url: "http://images.example.test/car.jpg" }).success, false);
+  assert.equal(addImageSchema.safeParse({ url: "not-a-url" }).success, false);
+});
+
 test("vehicle create validation rejects negative price, invalid year, mileage, missing fields, and malformed image URLs", () => {
   assert.equal(createVehicleSchema.safeParse({ ...validVehicle, price: -1 }).success, false);
   assert.equal(createVehicleSchema.safeParse({ ...validVehicle, year: 2200 }).success, false);
   assert.equal(createVehicleSchema.safeParse({ ...validVehicle, mileage: -1 }).success, false);
   assert.equal(createVehicleSchema.safeParse({ ...validVehicle, make: "" }).success, false);
   assert.equal(createVehicleSchema.safeParse({ ...validVehicle, currency: "US" }).success, false);
+  assert.equal(createVehicleSchema.safeParse({ ...validVehicle, images: [{ url: "http://example.com/car.jpg" }] }).success, false);
   assert.equal(createVehicleSchema.safeParse({ ...validVehicle, images: [{ url: "not-a-url" }] }).success, false);
   assert.equal(createVehicleSchema.safeParse({ ...validVehicle, images: [{ url: "https://example.com/a.jpg", isPrimary: true }, { url: "https://example.com/b.jpg", isPrimary: true }] }).success, false);
 });

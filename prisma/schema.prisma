@@ -76,6 +76,17 @@ model Session {
   @@index([expiresAt])
 }
 
+model LoginRateLimitBucket {
+  id              String   @id
+  bucketKey       String   @unique
+  attempts        Int      @default(0)
+  windowStartedAt DateTime @default(now())
+  blockedUntil    DateTime?
+  updatedAt       DateTime @updatedAt
+
+  @@index([blockedUntil])
+}
+
 model BusinessSetting {
   id          String   @id @default(cuid())
   key         String   @unique

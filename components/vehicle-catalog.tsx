@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { VehicleImage } from "@/components/vehicle-image";
 import type { PublicVehicle } from "@/lib/inventory";
 
 function vehicleName(vehicle: PublicVehicle): string {
@@ -33,9 +33,7 @@ function VehicleCard({
   return (
     <article className="vehicle-card">
       <div className="vehicle-card__image">
-        {primaryImage ? (
-          <Image alt={altText} fill unoptimized sizes="(max-width: 720px) 100vw, (max-width: 1000px) 50vw, 400px" src={primaryImage.url} />
-        ) : <div aria-label="Vehicle image unavailable" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#68716d", background: "#e8ece9" }}>Image unavailable</div>}
+        <VehicleImage alt={altText} sizes="(max-width: 720px) 100vw, (max-width: 1000px) 50vw, 400px" src={primaryImage?.url} />
         {featured && <span className="vehicle-card__badge">Featured</span>}
       </div>
       <div className="vehicle-card__body">
@@ -114,15 +112,11 @@ function VehicleDetailsDialog({
       {vehicle && (
         <>
           <div className="vehicle-dialog__image">
-            {vehicle.images.length > 0 ? (
-              <Image
-                alt={vehicle.images.find((image) => image.isPrimary)?.altText ?? vehicle.images[0].altText ?? `${vehicle.make} ${vehicle.model}`}
-                fill
-                unoptimized
-                sizes="(max-width: 720px) 100vw, 760px"
-                src={(vehicle.images.find((image) => image.isPrimary) ?? vehicle.images[0]).url}
-              />
-            ) : <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#68716d", background: "#e8ece9" }}>Image unavailable</div>}
+            <VehicleImage
+              alt={vehicle.images.find((image) => image.isPrimary)?.altText ?? vehicle.images[0]?.altText ?? `${vehicle.make} ${vehicle.model}`}
+              sizes="(max-width: 720px) 100vw, 760px"
+              src={(vehicle.images.find((image) => image.isPrimary) ?? vehicle.images[0])?.url}
+            />
             <button
               aria-label="Close vehicle details"
               className="vehicle-dialog__close"
@@ -170,13 +164,18 @@ function VehicleDetailsDialog({
   );
 }
 
-export function VehicleCatalog() {
+export function VehicleCatalog({ featuredOnly = false }: { featuredOnly?: boolean }) {
+  const pageSize = featuredOnly ? 48 : 24;
   const [search, setSearch] = useState("");
   const [selectedMake, setSelectedMake] = useState("all");
   const [selectedPrice, setSelectedPrice] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
   const [selectedFuel, setSelectedFuel] = useState("all");
   const [selectedTransmission, setSelectedTransmission] = useState("all");
+  const [selectedSort, setSelectedSort] = useState("recent");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
   const [selectedVehicle, setSelectedVehicle] = useState<PublicVehicle | null>(null);
   const [vehicles, setVehicles] = useState<PublicVehicle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,6 +189,9 @@ export function VehicleCatalog() {
     if (selectedYear !== "all") params.set("year", selectedYear);
     if (selectedFuel !== "all") params.set("fuelType", selectedFuel);
     if (selectedTransmission !== "all") params.set("transmission", selectedTransmission);
+    params.set("page", String(page));
+    params.set("pageSize", String(pageSize));
+    params.set("sort", selectedSort);
     if (selectedPrice === "under-40000000") params.set("maxPrice", "39999999.99");
     if (selectedPrice === "40000000-80000000") {
       params.set("minPrice", "40000000");
@@ -206,10 +208,18 @@ export function VehicleCatalog() {
         if (!active) return;
         setLoadError(false);
         setVehicles(result.vehicles ?? []);
+        setTotal(result.total ?? 0);
+        setPageCount(result.pageCount ?? 0);
+        if (result.pageCount > 0 && page > result.pageCount) {
+          setPage(result.pageCount);
+          return;
+        }
       })
       .catch(() => {
         if (!active) return;
         setVehicles([]);
+        setTotal(0);
+        setPageCount(0);
         setLoadError(true);
       })
       .finally(() => {
@@ -219,7 +229,7 @@ export function VehicleCatalog() {
     return () => {
       active = false;
     };
-  }, [search, selectedMake, selectedPrice, selectedYear, selectedFuel, selectedTransmission]);
+  }, [search, selectedMake, selectedPrice, selectedYear, selectedFuel, selectedTransmission, selectedSort, page, pageSize]);
 
   const makes = [...new Set(vehicles.map((vehicle) => vehicle.make))].sort();
   const years = [...new Set(vehicles.map((vehicle) => vehicle.year))].sort((a, b) => b - a);
@@ -227,12 +237,15 @@ export function VehicleCatalog() {
   const matchingVehicles = vehicles;
 
   function resetFilters() {
+    setLoading(true);
     setSearch("");
     setSelectedMake("all");
     setSelectedPrice("all");
     setSelectedYear("all");
     setSelectedFuel("all");
     setSelectedTransmission("all");
+    setSelectedSort("recent");
+    setPage(1);
   }
 
   return (
@@ -252,19 +265,34 @@ export function VehicleCatalog() {
 
         {loading ? (
           <div className="inventory-block">
-            <p className="inventory-count">Loading vehicles…</p>
+            <p className="inventory-count" role="status">Loading available vehicles…</p>
           </div>
         ) : null}
 
-        {!loading && featuredVehicles.length > 0 ? (
+        {featuredOnly && loadError && <div className="featured-empty" role="alert"><p className="eyebrow">The collection</p><h3>Listings are taking a moment.</h3><p>Please try again shortly, or contact Legend Motors directly about current availability.</p></div>}
+
+        {featuredOnly && !loading && featuredVehicles.length > 0 ? (
           <div aria-label="Featured vehicles" className="featured-grid" id="featured-vehicles">
-            {featuredVehicles.map((vehicle) => (
+            {featuredVehicles.slice(0, 3).map((vehicle) => (
               <VehicleCard featured key={vehicle.id} onViewDetails={setSelectedVehicle} vehicle={vehicle} />
             ))}
           </div>
         ) : null}
 
-        <div className="inventory-block" id="inventory">
+        {featuredOnly && !loading && featuredVehicles.length === 0 && !loadError && (
+          <div className="featured-empty">
+            <p className="eyebrow">The collection</p>
+            <h3>New listings are on the way.</h3>
+            <p>Contact Legend Motors to discuss current availability or tell us what you are looking for.</p>
+            <Link className="text-link" href="/vehicles">Explore all available vehicles <span aria-hidden="true">&#8594;</span></Link>
+          </div>
+        )}
+
+        {featuredOnly && !loading && featuredVehicles.length > 0 && (
+          <div className="featured-more"><Link className="button button--dark" href="/vehicles">Explore all vehicles <span aria-hidden="true">&#8594;</span></Link></div>
+        )}
+
+        {!featuredOnly && <div className="inventory-block" id="inventory">
           <div className="inventory-heading">
             <div>
               <p className="eyebrow">The full collection</p>
@@ -273,7 +301,7 @@ export function VehicleCatalog() {
               </h2>
             </div>
             <p aria-live="polite" className="inventory-count">
-              {matchingVehicles.length} {matchingVehicles.length === 1 ? "vehicle" : "vehicles"}
+              {total} {total === 1 ? "vehicle" : "vehicles"}
             </p>
           </div>
 
@@ -283,7 +311,7 @@ export function VehicleCatalog() {
               <input
                 autoComplete="off"
                 id="vehicle-search"
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => { setLoading(true); setSearch(event.target.value); setPage(1); }}
                 placeholder="Try a make, model or body style"
                 type="search"
                 value={search}
@@ -291,7 +319,7 @@ export function VehicleCatalog() {
             </div>
             <div className="filter-field">
               <label htmlFor="make-filter">Make</label>
-              <select id="make-filter" onChange={(event) => setSelectedMake(event.target.value)} value={selectedMake}>
+              <select id="make-filter" onChange={(event) => { setLoading(true); setSelectedMake(event.target.value); setPage(1); }} value={selectedMake}>
                 <option value="all">All makes</option>
                 {makes.map((make) => (
                   <option key={make} value={make}>
@@ -302,7 +330,7 @@ export function VehicleCatalog() {
             </div>
             <div className="filter-field">
               <label htmlFor="price-filter">Price</label>
-              <select id="price-filter" onChange={(event) => setSelectedPrice(event.target.value)} value={selectedPrice}>
+              <select id="price-filter" onChange={(event) => { setLoading(true); setSelectedPrice(event.target.value); setPage(1); }} value={selectedPrice}>
                 <option value="all">Any price</option>
                 <option value="under-40000000">Under MWK 40,000,000</option>
                 <option value="40000000-80000000">MWK 40,000,000–80,000,000</option>
@@ -311,7 +339,7 @@ export function VehicleCatalog() {
             </div>
             <div className="filter-field">
               <label htmlFor="year-filter">Year</label>
-              <select id="year-filter" onChange={(event) => setSelectedYear(event.target.value)} value={selectedYear}>
+              <select id="year-filter" onChange={(event) => { setLoading(true); setSelectedYear(event.target.value); setPage(1); }} value={selectedYear}>
                 <option value="all">Any year</option>
                 {years.map((year) => (
                   <option key={year} value={year}>
@@ -322,7 +350,7 @@ export function VehicleCatalog() {
             </div>
             <div className="filter-field">
               <label htmlFor="fuel-filter">Fuel type</label>
-              <select id="fuel-filter" onChange={(event) => setSelectedFuel(event.target.value)} value={selectedFuel}>
+              <select id="fuel-filter" onChange={(event) => { setLoading(true); setSelectedFuel(event.target.value); setPage(1); }} value={selectedFuel}>
                 <option value="all">All fuel types</option>
                 {[...new Set(vehicles.map((vehicle) => vehicle.fuelType))].map((type) => (
                   <option key={type} value={type}>
@@ -335,7 +363,7 @@ export function VehicleCatalog() {
               <label htmlFor="transmission-filter">Transmission</label>
               <select
                 id="transmission-filter"
-                onChange={(event) => setSelectedTransmission(event.target.value)}
+                onChange={(event) => { setLoading(true); setSelectedTransmission(event.target.value); setPage(1); }}
                 value={selectedTransmission}
               >
                 <option value="all">Any transmission</option>
@@ -346,10 +374,24 @@ export function VehicleCatalog() {
                 ))}
               </select>
             </div>
+            <div className="filter-field">
+              <label htmlFor="sort-filter">Sort by</label>
+              <select id="sort-filter" onChange={(event) => { setLoading(true); setSelectedSort(event.target.value); setPage(1); }} value={selectedSort}>
+                <option value="recent">Recently added</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+              </select>
+            </div>
             <button className="filter-reset" onClick={resetFilters} type="button">
               Reset filters
             </button>
           </div>
+
+          {pageCount > 1 && !loadError && <nav aria-label="Vehicle result pages" className="catalog-pagination">
+            <button className="filter-reset" disabled={page <= 1 || loading} onClick={() => { setLoading(true); setPage((current) => current - 1); }} type="button">Previous</button>
+            <span aria-live="polite">Page {page} of {pageCount}</span>
+            <button className="filter-reset" disabled={page >= pageCount || loading} onClick={() => { setLoading(true); setPage((current) => current + 1); }} type="button">Next</button>
+          </nav>}
 
           <div aria-labelledby="inventory-heading" className="inventory-grid">
             {loadError ? (
@@ -371,7 +413,7 @@ export function VehicleCatalog() {
               </div>
             )}
           </div>
-        </div>
+        </div>}
       </div>
       <VehicleDetailsDialog onClose={() => setSelectedVehicle(null)} vehicle={selectedVehicle} />
     </section>

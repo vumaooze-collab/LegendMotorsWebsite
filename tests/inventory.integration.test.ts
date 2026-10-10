@@ -6,25 +6,34 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { loadEnvConfig } from "@next/env";
+import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/db/prisma";
-import { hashSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "@/lib/auth/session";
+import { verifyUserCredentials } from "@/lib/auth/credentials";
+import { clearLoginAttempts, consumeLoginAttempt } from "@/lib/auth/login-rate-limit";
+import { createSessionForUser, hashSessionToken, revokeSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "@/lib/auth/session";
 
 loadEnvConfig(process.cwd());
-const hasDatabase = Boolean(process.env.DATABASE_URL);
+const testDatabaseUrl = process.env.TEST_DATABASE_URL;
+if (testDatabaseUrl) process.env.DATABASE_URL = testDatabaseUrl;
+const hasTestDatabase = Boolean(testDatabaseUrl);
 
-test("PostgreSQL inventory API persists CRUD, permissions, images, and audit records", { skip: !hasDatabase, timeout: 120_000 }, async () => {
+test("PostgreSQL inventory API persists CRUD, permissions, images, and audit records", { skip: !hasTestDatabase, timeout: 120_000 }, async () => {
   const suffix = randomUUID();
   const adminRole = await prisma.role.upsert({ where: { name: "ADMIN" }, update: {}, create: { name: "ADMIN" } });
   const staffRole = await prisma.role.upsert({ where: { name: "STAFF" }, update: {}, create: { name: "STAFF" } });
-  const admin = await prisma.user.create({ data: { name: "Inventory API Admin", email: `inventory-admin-${suffix}@example.test`, roleId: adminRole.id } });
+  const loginPassword = "IntegrationTestPassword123!";
+  const admin = await prisma.user.create({ data: { name: "Inventory API Admin", email: `inventory-admin-${suffix}@example.test`, passwordHash: await bcrypt.hash(loginPassword, 12), roleId: adminRole.id } });
   const staff = await prisma.user.create({ data: { name: "Inventory API Staff", email: `inventory-staff-${suffix}@example.test`, roleId: staffRole.id } });
+  const inactive = await prisma.user.create({ data: { name: "Inactive API User", email: `inventory-inactive-${suffix}@example.test`, roleId: staffRole.id, isActive: false } });
   const adminToken = randomBytes(32).toString("hex");
   const staffToken = randomBytes(32).toString("hex");
+  const inactiveToken = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
   await prisma.session.createMany({ data: [
     { userId: admin.id, tokenHash: hashSessionToken(adminToken), expiresAt, isActive: true },
     { userId: staff.id, tokenHash: hashSessionToken(staffToken), expiresAt, isActive: true },
+    { userId: inactive.id, tokenHash: hashSessionToken(inactiveToken), expiresAt, isActive: true },
   ] });
 
   const portServer = createServer();
@@ -38,6 +47,9 @@ test("PostgreSQL inventory API persists CRUD, permissions, images, and audit rec
   const nextCli = join(process.cwd(), "node_modules", "next", "dist", "bin", "next");
   const baseUrl = `http://127.0.0.1:${port}`;
   let vehicleId: string | undefined;
+  let bootstrappedUserId: string | undefined;
+  const rateLimitEmail = `rate-limit-${suffix}@example.test`;
+  const addressRateLimitEmails = Array.from({ length: 31 }, (_, index) => `rate-limit-address-${index}-${suffix}@example.test`);
   let serverOutput = "";
   let webServer: ReturnType<typeof spawn> | undefined;
 
@@ -85,13 +97,71 @@ test("PostgreSQL inventory API persists CRUD, permissions, images, and audit rec
     return fetch(`${baseUrl}${path}`, { ...init, headers });
   }
 
+  function runAdminBootstrap(email: string, password: string, resetExisting = false) {
+    const script = join(process.cwd(), "scripts", "create-admin.ts");
+    return new Promise<string>((resolve, reject) => {
+      const child = spawn(process.execPath, ["--import", "./scripts/node-test-compat.mjs", "--import", "tsx", script, ...(resetExisting ? ["--reset-existing"] : [])], {
+        cwd: process.cwd(),
+        env: { ...process.env, INITIAL_ADMIN_EMAIL: email, INITIAL_ADMIN_PASSWORD: password },
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      let output = "";
+      child.stdout?.on("data", (chunk: Buffer) => { output += chunk.toString(); });
+      child.stderr?.on("data", (chunk: Buffer) => { output += chunk.toString(); });
+      child.once("error", reject);
+      child.once("close", (code) => code === 0 ? resolve(output) : reject(new Error(output)));
+    });
+  }
+
   try {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      assert.equal((await consumeLoginAttempt(rateLimitEmail)).allowed, true);
+    }
+    const blockedAttempt = await consumeLoginAttempt(rateLimitEmail);
+    assert.equal(blockedAttempt.allowed, false);
+    assert.ok(blockedAttempt.retryAfterSeconds > 0);
+    assert.equal((await consumeLoginAttempt(` ${rateLimitEmail.toUpperCase()} `)).allowed, false);
+    await clearLoginAttempts(rateLimitEmail);
+    assert.equal((await consumeLoginAttempt(rateLimitEmail)).allowed, true);
+    for (const addressEmail of addressRateLimitEmails.slice(0, 30)) {
+      assert.equal((await consumeLoginAttempt(addressEmail, "203.0.113.15")).allowed, true);
+    }
+    assert.equal((await consumeLoginAttempt(addressRateLimitEmails[30], "203.0.113.15")).allowed, false);
+
+    assert.equal(await verifyUserCredentials(admin.email, "wrong-password"), null);
+    assert.equal(await verifyUserCredentials(` ${admin.email.toUpperCase()} `, loginPassword).then((user) => user?.id), admin.id);
+    const bootstrapEmail = `bootstrap-${suffix}@example.test`;
+    const oldBootstrapPassword = "InitialBootstrapPassword123!";
+    const newBootstrapPassword = "ResetBootstrapPassword456!";
+    await runAdminBootstrap(bootstrapEmail, oldBootstrapPassword);
+    const bootstrappedUser = await prisma.user.findUniqueOrThrow({ where: { email: bootstrapEmail } });
+    bootstrappedUserId = bootstrappedUser.id;
+    const bootstrapSession = await createSessionForUser(bootstrappedUser.id);
+    await assert.rejects(runAdminBootstrap(bootstrapEmail, newBootstrapPassword), /already exists/);
+    await runAdminBootstrap(bootstrapEmail, newBootstrapPassword, true);
+    assert.equal(await verifyUserCredentials(bootstrapEmail, oldBootstrapPassword), null);
+    assert.equal((await verifyUserCredentials(bootstrapEmail, newBootstrapPassword))?.id, bootstrappedUser.id);
+    assert.equal((await prisma.session.findUniqueOrThrow({ where: { tokenHash: hashSessionToken(bootstrapSession.token) } })).isActive, false);
     await waitForServer(startServer());
+
+    const loginSession = await createSessionForUser(admin.id);
+    const activeSessionResponse = await request("/api/admin/session", loginSession.token);
+    assert.equal(activeSessionResponse.status, 200);
+    assert.equal((await activeSessionResponse.json() as { authenticated: boolean }).authenticated, true);
+    await revokeSessionToken(loginSession.token);
+    assert.equal((await request("/api/admin/session", loginSession.token)).status, 401);
 
     const unauthenticated = await request("/api/admin/inventory", undefined);
     assert.equal(unauthenticated.status, 401);
+    const protectedDashboard = await request("/admin", undefined, { redirect: "manual" });
+    assert.ok([307, 308].includes(protectedDashboard.status));
+    assert.match(protectedDashboard.headers.get("location") ?? "", /\/login(?:\?|$)/);
+    const inactiveSession = await request("/api/admin/inventory", inactiveToken);
+    assert.equal(inactiveSession.status, 401);
+    assert.equal((await prisma.session.findUniqueOrThrow({ where: { tokenHash: hashSessionToken(inactiveToken) } })).isActive, false);
     const staffMutation = await request("/api/admin/inventory", staffToken, { method: "POST", body: JSON.stringify({}) });
     assert.equal(staffMutation.status, 403);
+    assert.equal((await request("/admin", staffToken)).status, 200);
 
     const createdResponse = await request("/api/admin/inventory", adminToken, {
       method: "POST",
@@ -150,6 +220,10 @@ test("PostgreSQL inventory API persists CRUD, permissions, images, and audit rec
     const publicPayload = await publicResponse.json() as { vehicle: Record<string, unknown> };
     assert.equal("stockNumber" in publicPayload.vehicle, false);
     assert.equal("published" in publicPayload.vehicle, false);
+    const publicPage = await request(`/vehicles/${created.id}`);
+    assert.equal(publicPage.status, 200);
+    assert.match(await publicPage.text(), /Toyota Corolla/);
+    assert.equal((await request("/vehicles/not-a-real-vehicle")).status, 404);
     const publicListResponse = await request("/api/vehicles");
     assert.equal(publicListResponse.status, 200);
     const publicList = await publicListResponse.json() as { vehicles: Array<Record<string, unknown>> };
@@ -157,6 +231,20 @@ test("PostgreSQL inventory API persists CRUD, permissions, images, and audit rec
     assert.ok(publicListVehicle);
     assert.equal("stockNumber" in publicListVehicle, false);
     assert.equal("published" in publicListVehicle, false);
+    const pagedListResponse = await request("/api/vehicles?page=1&pageSize=1&sort=price-asc");
+    assert.equal(pagedListResponse.status, 200);
+    const pagedList = await pagedListResponse.json() as { total: number; page: number; pageSize: number; pageCount: number; vehicles: Array<{ id: string; price: number }> };
+    assert.equal(pagedList.page, 1);
+    assert.equal(pagedList.pageSize, 1);
+    assert.ok(pagedList.total >= 1);
+    assert.equal(pagedList.vehicles.length, 1);
+    assert.ok(pagedList.pageCount >= 1);
+    assert.equal((await request("/api/vehicles?sort=unexpected")).status, 400);
+    if (pagedList.pageCount > 1) {
+      const nextPage = await request("/api/vehicles?page=2&pageSize=1&sort=price-asc").then((response) => response.json()) as { vehicles: Array<{ id: string; price: number }> };
+      assert.notEqual(nextPage.vehicles[0]?.id, pagedList.vehicles[0]?.id);
+      assert.ok(Number(pagedList.vehicles[0].price) <= Number(nextPage.vehicles[0]?.price));
+    }
 
     const imageResponse = await request(`/api/admin/inventory/${created.id}/images`, adminToken, {
       method: "POST",
@@ -205,9 +293,17 @@ test("PostgreSQL inventory API persists CRUD, permissions, images, and audit rec
     ]));
   } finally {
     if (webServer) await stopServer(webServer);
+    await clearLoginAttempts(rateLimitEmail);
+    for (const addressEmail of addressRateLimitEmails) {
+      await clearLoginAttempts(addressEmail, "203.0.113.15");
+    }
     if (vehicleId) await prisma.vehicle.deleteMany({ where: { id: vehicleId } });
-    await prisma.auditLog.deleteMany({ where: { userId: { in: [admin.id, staff.id] } } });
-    await prisma.session.deleteMany({ where: { userId: { in: [admin.id, staff.id] } } });
-    await prisma.user.deleteMany({ where: { id: { in: [admin.id, staff.id] } } });
+    await prisma.auditLog.deleteMany({ where: { userId: { in: [admin.id, staff.id, inactive.id] } } });
+    await prisma.session.deleteMany({ where: { userId: { in: [admin.id, staff.id, inactive.id] } } });
+    if (bootstrappedUserId) {
+      await prisma.session.deleteMany({ where: { userId: bootstrappedUserId } });
+      await prisma.user.deleteMany({ where: { id: bootstrappedUserId } });
+    }
+    await prisma.user.deleteMany({ where: { id: { in: [admin.id, staff.id, inactive.id] } } });
   }
 });

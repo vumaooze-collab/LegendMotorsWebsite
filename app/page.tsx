@@ -1,7 +1,6 @@
-import { AboutSection, EnquiryBanner, ServicesSection, WhyChooseSection } from "@/components/brand-sections";
-import { BusinessActions } from "@/components/business-actions";
+import { AboutSection, EnquiryBanner } from "@/components/brand-sections";
 import { ContactSection } from "@/components/contact-section";
-import { HeroSection, QuickShoppingBar } from "@/components/hero-section";
+import { HeroSection } from "@/components/hero-section";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { VehicleCatalog } from "@/components/vehicle-catalog";
@@ -15,11 +14,7 @@ export default function Home() {
       <SiteHeader />
       <main id="main-content">
         <HeroSection />
-        <QuickShoppingBar />
-        <VehicleCatalog />
-        <ServicesSection />
-        <BusinessActions />
-        <WhyChooseSection />
+        <VehicleCatalog featuredOnly />
         <AboutSection />
         <EnquiryBanner />
         <ContactSection />

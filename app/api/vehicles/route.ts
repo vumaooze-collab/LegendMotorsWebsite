@@ -12,6 +12,9 @@ const publicFiltersSchema = z.object({
   maxMileage: z.coerce.number().int().nonnegative().optional(),
   fuelType: z.string().trim().max(40).optional(),
   transmission: z.string().trim().max(40).optional(),
+  page: z.coerce.number().int().min(1).max(10_000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(48).default(24),
+  sort: z.enum(["recent", "price-asc", "price-desc"]).default("recent"),
 }).refine((filters) => filters.minPrice === undefined || filters.maxPrice === undefined || filters.minPrice <= filters.maxPrice, "Minimum price must not exceed maximum price.");
 
 export async function GET(request: Request) {
@@ -20,7 +23,7 @@ export async function GET(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid vehicle filters.", issues: parsed.error.issues }, { status: 400 });
 
   try {
-    const vehicles = await listPublicVehicles({
+    const results = await listPublicVehicles({
       query: parsed.data.q,
       make: parsed.data.make,
       year: parsed.data.year,
@@ -29,8 +32,11 @@ export async function GET(request: Request) {
       maxMileage: parsed.data.maxMileage,
       fuelType: parsed.data.fuelType,
       transmission: parsed.data.transmission,
+      page: parsed.data.page,
+      pageSize: parsed.data.pageSize,
+      sort: parsed.data.sort,
     });
-    return NextResponse.json({ total: vehicles.length, vehicles }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(results, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Vehicle listings are temporarily unavailable." }, { status: 500 });
   }

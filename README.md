@@ -24,7 +24,7 @@ Create a private `.env` file in the project root:
 ```dotenv
 DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/legendmotors_dev?schema=public"
 INITIAL_ADMIN_EMAIL="your-admin-email@example.com"
-INITIAL_ADMIN_PASSWORD="use-a-unique-password-at-least-8-characters"
+INITIAL_ADMIN_PASSWORD="use-a-unique-password-at-least-12-characters"
 ```
 
 Use the credentials and database name for your own environment. Never commit `.env` or share secrets.
@@ -38,7 +38,7 @@ npx prisma db push
 npm run auth:bootstrap
 ```
 
-If the database already contains data, back it up and inspect the schema before running `db push`. This repository currently does not contain Prisma Migrate migration files.
+For local development, `prisma db push` is convenient for an empty or disposable database. Production schema changes are tracked in `prisma/migrations` and should be applied with `npx prisma migrate deploy` after reviewing the migration and target database.
 
 Start the app:
 

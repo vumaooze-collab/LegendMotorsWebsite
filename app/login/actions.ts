@@ -1,35 +1,40 @@
 "use server";
 
-import { createHash } from "crypto";
-
-import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 import { prisma } from "@/lib/db/prisma";
-import { createSessionForUser, setSessionCookie } from "@/lib/auth/session";
+import { verifyUserCredentials } from "@/lib/auth/credentials";
+import { clearLoginAttempts, consumeLoginAttempt } from "@/lib/auth/login-rate-limit";
+import { createSessionForUser, revokeSessionToken, setSessionCookie } from "@/lib/auth/session";
 
 export async function login(formData: FormData) {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
     redirect("/login?error=Please provide a valid email and password.");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: { role: true },
-  });
+  const requestHeaders = await headers();
+  const forwardedFor = requestHeaders.get("x-forwarded-for")?.split(",").map((part) => part.trim()).filter(Boolean);
+  const address = requestHeaders.get("x-vercel-forwarded-for")?.trim()
+    || requestHeaders.get("x-real-ip")?.trim()
+    || forwardedFor?.at(-1)
+    || null;
+  const attempt = await consumeLoginAttempt(email, address);
 
-  if (!user || !user.passwordHash || !user.isActive) {
+  if (!attempt.allowed) {
+    redirect("/login?error=Too+many+sign-in+attempts.+Try+again+later.");
+  }
+
+  const user = await verifyUserCredentials(email, password);
+
+  if (!user) {
     redirect("/login?error=Invalid email or password.");
   }
 
-  const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-
-  if (!passwordMatches) {
-    redirect("/login?error=Invalid email or password.");
-  }
+  await clearLoginAttempts(email, address);
 
   const { token } = await createSessionForUser(user.id);
   await setSessionCookie(token);
@@ -49,11 +54,7 @@ export async function logout() {
   const token = cookieStore.get("legend_motors_session")?.value;
 
   if (token) {
-    await prisma.session.deleteMany({
-      where: {
-        tokenHash: createHash("sha256").update(token).digest("hex"),
-      },
-    });
+    await revokeSessionToken(token);
   }
 
   cookieStore.delete("legend_motors_session");

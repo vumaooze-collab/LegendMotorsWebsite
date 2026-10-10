@@ -38,7 +38,12 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error ?? "Inventory request failed.");
+  if (!response.ok) {
+    const details = Array.isArray(result.issues)
+      ? result.issues.map((issue: { message?: string }) => issue.message).filter(Boolean).join(" ")
+      : "";
+    throw new Error([result.error ?? "Inventory request failed.", details].filter(Boolean).join(" "));
+  }
   return result as T;
 }
 
@@ -48,6 +53,8 @@ function priceLabel(vehicle: InventoryVehicle) {
 
 export function InventoryAdmin({ canManage }: { canManage: boolean }) {
   const [vehicles, setVehicles] = useState<InventoryVehicle[]>([]);
+  const [inventoryQuery, setInventoryQuery] = useState("");
+  const [inventoryStatus, setInventoryStatus] = useState<InventoryStatus | "ALL">("ALL");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -59,6 +66,13 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
   const [imageVehicle, setImageVehicle] = useState<InventoryVehicle | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
+
+  const visibleVehicles = vehicles.filter((vehicle) => {
+    const query = inventoryQuery.trim().toLocaleLowerCase();
+    const matchesQuery = !query || [vehicle.stockNumber, vehicle.make, vehicle.model, vehicle.variant ?? "", String(vehicle.year)]
+      .some((value) => value.toLocaleLowerCase().includes(query));
+    return matchesQuery && (inventoryStatus === "ALL" || vehicle.status === inventoryStatus);
+  });
 
   async function refresh() {
     const result = await requestJson<{ vehicles: InventoryVehicle[] }>("/api/admin/inventory", { cache: "no-store" });
@@ -221,7 +235,7 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
   }
 
   return (
-    <main style={{ padding: "32px 24px 80px", background: "#f5f7f5", minHeight: "calc(100vh - 90px)" }}>
+    <main className="admin-main" style={{ minHeight: "calc(100vh - 90px)" }}>
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
           <div>
@@ -266,11 +280,18 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
         )}
 
         <section style={{ background: "#fff", border: "1px solid #e1e5e2", overflow: "hidden" }}>
-          <div style={{ padding: 18, borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between" }}><h2 style={{ margin: 0, fontSize: 22 }}>Inventory list</h2><span>{vehicles.length} vehicles</span></div>
-          {loading ? <p style={{ padding: 20 }}>Loading inventory…</p> : vehicles.length === 0 ? <p style={{ padding: 20 }}>No vehicles have been recorded.</p> : (
+          <div style={{ padding: 18, borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <h2 style={{ margin: 0, fontSize: 22 }}>Inventory list</h2>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <label className="admin-filter-label">Search inventory<input aria-label="Search inventory" onChange={(event) => setInventoryQuery(event.target.value)} placeholder="Stock, make, model or year" type="search" value={inventoryQuery} style={{ ...fieldStyle, minWidth: 220 }} /></label>
+              <label className="admin-filter-label">Status<select aria-label="Filter inventory by status" onChange={(event) => setInventoryStatus(event.target.value as InventoryStatus | "ALL")} value={inventoryStatus} style={{ ...fieldStyle, minWidth: 150 }}><option value="ALL">All statuses</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
+              <span aria-live="polite">{visibleVehicles.length} of {vehicles.length} vehicles</span>
+            </div>
+          </div>
+          {loading ? <p style={{ padding: 20 }}>Loading inventory…</p> : visibleVehicles.length === 0 ? <p style={{ padding: 20 }}>{vehicles.length === 0 ? "No vehicles have been recorded." : "No vehicles match the current search and status filter."}</p> : (
             <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1050 }}>
               <thead><tr style={{ textAlign: "left", color: "#4b5563", fontSize: 12, textTransform: "uppercase" }}>{["Stock", "Vehicle", "Status", "Mileage", "Price", "Published", "Images", "Actions"].map((heading) => <th key={heading} style={{ padding: "12px 14px" }}>{heading}</th>)}</tr></thead>
-              <tbody>{vehicles.map((vehicle) => <tr key={vehicle.id} style={{ borderTop: "1px solid #eef0f1" }}>
+              <tbody>{visibleVehicles.map((vehicle) => <tr key={vehicle.id} style={{ borderTop: "1px solid #eef0f1" }}>
                 <td style={{ padding: "12px 14px", fontWeight: 700 }}>{vehicle.stockNumber}</td><td style={{ padding: "12px 14px" }}>{vehicle.year} {vehicle.make} {vehicle.model}</td>
                 <td style={{ padding: "12px 14px" }}><select aria-label={`Status for ${vehicle.stockNumber}`} disabled={busy || !canManage} style={fieldStyle} value={vehicle.status} onChange={(event) => void mutateVehicle(vehicle, "/status", { status: event.target.value })}>{statuses.map((status) => <option key={status}>{status}</option>)}</select></td>
                 <td style={{ padding: "12px 14px" }}>{vehicle.mileage.toLocaleString()} km</td><td style={{ padding: "12px 14px" }}>{priceLabel(vehicle)}</td><td style={{ padding: "12px 14px" }}>{vehicle.published ? "Yes" : "No"}</td><td style={{ padding: "12px 14px" }}>{vehicle.images.length}</td>

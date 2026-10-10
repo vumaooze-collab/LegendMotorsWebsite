@@ -20,7 +20,7 @@ export default async function AdminDashboardPage() {
   };
 
   return (
-    <main style={{ padding: "32px 24px 80px", background: "#f5f7f5" }}>
+    <main className="admin-main">
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, gap: 16 }}>
           <div>

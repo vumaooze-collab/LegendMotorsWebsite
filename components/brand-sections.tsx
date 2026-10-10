@@ -119,17 +119,17 @@ export function AboutSection() {
             fill
             unoptimized
             sizes="(max-width: 720px) 100vw, 50vw"
-            src="https://images.unsplash.com/photo-1507136566006-cfc505b114fc?auto=format&fit=crop&w=1200&q=85"
+            src="/images/editorial-interior.jpg"
           />
         </div>
         <div className="about-copy">
-          <p className="eyebrow">A little about us</p>
-          <h2 id="about-heading">A clearer way to find your next car.</h2>
+          <p className="eyebrow">A considered buying experience</p>
+          <h2 id="about-heading">The right details make all the difference.</h2>
           <p>
-            Legend Motors brings vehicle discovery and enquiry together in one straightforward place. Browse the collection, compare the details, then get in touch when you are ready.
+            Legend Motors brings vehicle discovery and personal enquiry together in one straightforward place. Browse the collection, compare the details, then get in touch when you are ready.
           </p>
           <p>
-            Legend Motors Malawi helps customers discover vehicles and connect with the dealership for sales, sourcing and related automotive services.
+            Visit or contact our Lilongwe team for current availability, vehicle questions and sourcing enquiries.
           </p>
           <a className="text-link" href="#vehicles">
             Explore vehicles <span aria-hidden="true">&#8594;</span>

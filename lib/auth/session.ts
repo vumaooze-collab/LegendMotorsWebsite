@@ -15,6 +15,13 @@ export function hashSessionToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+export async function revokeSessionToken(token: string) {
+  return prisma.session.updateMany({
+    where: { tokenHash: hashSessionToken(token) },
+    data: { isActive: false },
+  });
+}
+
 export async function createSessionForUser(userId: string) {
   const token = createSessionToken();
   const session = await prisma.session.create({
@@ -57,11 +64,7 @@ export async function deleteCurrentSession() {
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (token) {
-    await prisma.session.deleteMany({
-      where: {
-        tokenHash: hashSessionToken(token),
-      },
-    });
+    await revokeSessionToken(token);
   }
 
   await clearSessionCookie();
@@ -92,7 +95,13 @@ export async function getCurrentUser() {
     },
   });
 
-  if (!session) {
+  if (!session || !session.user.isActive) {
+    if (session) {
+      await prisma.session.updateMany({
+        where: { id: session.id },
+        data: { isActive: false },
+      });
+    }
     await clearSessionCookie();
     return null;
   }

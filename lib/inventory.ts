@@ -7,7 +7,7 @@ export const INVENTORY_STATUSES = ["AVAILABLE", "RESERVED", "SOLD", "DRAFT", "AR
 export type InventoryStatus = (typeof INVENTORY_STATUSES)[number];
 
 const imageInputSchema = z.object({
-  url: z.string().url().max(2048).refine((value) => /^https?:\/\//i.test(value), "Image URL must use HTTP or HTTPS."),
+  url: z.string().url().max(2048).refine((value) => /^https:\/\//i.test(value), "Image URL must use HTTPS."),
   altText: z.string().trim().max(160).optional().nullable(),
   displayOrder: z.number().int().min(0).default(0),
   isPrimary: z.boolean().default(false),
@@ -68,7 +68,7 @@ export const statusSchema = z.object({ status: z.enum(INVENTORY_STATUSES) }).str
 export const publicationSchema = z.object({ published: z.boolean() }).strict();
 export const addImageSchema = imageInputSchema.omit({ isPrimary: true }).extend({ isPrimary: z.boolean().default(false) }).strict();
 export const updateImageSchema = z.object({
-  url: z.string().url().max(2048).refine((value) => /^https?:\/\//i.test(value), "Image URL must use HTTP or HTTPS.").optional(),
+  url: z.string().url().max(2048).refine((value) => /^https:\/\//i.test(value), "Image URL must use HTTPS.").optional(),
   altText: z.string().trim().max(160).nullable().optional(),
   displayOrder: z.number().int().min(0).optional(),
   isPrimary: z.boolean().optional(),
@@ -233,6 +233,9 @@ export async function listPublicVehicles(filters: {
   maxMileage?: number;
   fuelType?: string;
   transmission?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: "recent" | "price-asc" | "price-desc";
 } = {}) {
   const where: Prisma.VehicleWhereInput = {
     published: true,
@@ -254,8 +257,18 @@ export async function listPublicVehicles(filters: {
       ],
     } : {}),
   };
-  const rows = await prisma.vehicle.findMany({ where, include: vehicleInclude, orderBy: [{ featured: "desc" }, { updatedAt: "desc" }], take: 100 });
-  return rows.map(mapVehicle).map(toPublicVehicle);
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? 24;
+  const orderBy: Prisma.VehicleOrderByWithRelationInput[] = filters.sort === "price-asc"
+    ? [{ price: "asc" }, { createdAt: "desc" }]
+    : filters.sort === "price-desc"
+      ? [{ price: "desc" }, { createdAt: "desc" }]
+      : [{ featured: "desc" }, { createdAt: "desc" }];
+  const [rows, total] = await Promise.all([
+    prisma.vehicle.findMany({ where, include: vehicleInclude, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.vehicle.count({ where }),
+  ]);
+  return { vehicles: rows.map(mapVehicle).map(toPublicVehicle), total, page, pageSize, pageCount: Math.ceil(total / pageSize) };
 }
 
 export async function getPublicVehicle(id: string) {

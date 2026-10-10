@@ -1,36 +1,35 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export function HeroSection() {
   return (
     <section aria-labelledby="hero-heading" className="hero">
       <div className="hero__media">
         <Image
-          alt="A modern sports car on a scenic road"
+          alt="Editorial view of a luxury vehicle in a studio setting"
           fill
-          unoptimized
-          priority
+          preload
           sizes="100vw"
-          src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=2200&q=90"
+          src="/images/editorial-automotive.jpg"
         />
       </div>
-      <div className="hero__shade" />
       <div className="hero__content">
-        <p className="eyebrow eyebrow--light">Welcome to Legend Motors</p>
-        <h1 id="hero-heading">Find your next car.</h1>
+        <p className="eyebrow eyebrow--light">Legend Motors · Lilongwe</p>
+        <h1 id="hero-heading">A better way to find your next car.</h1>
         <p className="hero__copy">
-          Browse available vehicles, share a listing, or speak directly with our sales team about your next car.
+          Explore available vehicles, compare the details, and speak directly with our team when you are ready.
         </p>
         <div className="hero__actions">
-          <a className="button button--orange" href="#vehicles">
-            Browse vehicles <span aria-hidden="true">&#8594;</span>
-          </a>
-          <a className="button button--outline-light" href="#business">
-            Talk to sales
+          <Link className="button button--orange" href="/vehicles">
+            Browse available vehicles <span aria-hidden="true">&#8594;</span>
+          </Link>
+          <a className="button button--outline-light" href="#contact">
+            Speak with our team
           </a>
         </div>
-        <p className="hero__note">Vehicle availability and pricing are confirmed directly by Legend Motors.</p>
+        <p className="hero__note">Availability and pricing are confirmed directly with Legend Motors.</p>
       </div>
-      <span className="hero__caption">Vehicle photography for demonstration purposes</span>
+      <span className="hero__caption">Editorial photography · Not dealership inventory</span>
     </section>
   );
 }
