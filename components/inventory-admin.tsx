@@ -194,6 +194,40 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
     }
   }
 
+  async function uploadPhotos(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!imageVehicle || files.length === 0) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    let uploaded = 0;
+    const failures: string[] = [];
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("altText", `${imageVehicle.stockNumber} - ${file.name.replace(/\\.[^.]+$/, "").replace(/[-_]+/g, " ")}`);
+        try {
+          const response = await fetch(`/api/admin/inventory/${imageVehicle.id}/images/upload`, {
+            method: "POST",
+            body: formData,
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error ?? "Upload failed.");
+          uploaded += 1;
+        } catch (uploadError) {
+          failures.push(`${file.name}: ${uploadError instanceof Error ? uploadError.message : "Upload failed."}`);
+        }
+      }
+      await refresh();
+      setNotice(`${uploaded} photo(s) uploaded.${failures.length ? ` ${failures.length} failed.` : ""}`);
+      if (failures.length) setError(failures.join(" "));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function viewVehicle(vehicle: InventoryVehicle) {
     setBusy(true);
     setError("");
@@ -321,7 +355,12 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
         {imageVehicle && (
           <section style={{ background: "#fff", border: "1px solid #e1e5e2", padding: 20, marginTop: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><h2 style={{ margin: 0, fontSize: 22 }}>Images: {imageVehicle.stockNumber}</h2><button onClick={() => setImageVehicle(null)} style={buttonStyle} type="button">Close</button></div>
-            <p style={{ color: "#68716d" }}>This records an externally hosted image URL and metadata; it does not upload image files.</p>
+            <p style={{ color: "#68716d" }}>Upload several JPG, PNG, or WebP photos at once (maximum 4 MB each), or add an existing HTTPS image URL.</p>
+            {canManage && <label style={{ display: "grid", gap: 8, margin: "16px 0", padding: 16, border: "1px dashed #cbd2ce", background: "#f8faf9", fontWeight: 650 }}>
+              Upload vehicle photos
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={(event) => void uploadPhotos(event)} />
+              <span style={{ color: "#68716d", fontSize: 12, fontWeight: 400 }}>Select multiple images from your phone or computer. Photos are stored in the dealership's object-storage bucket.</span>
+            </label>}
             {canManage && <form onSubmit={addImage} style={{ display: "grid", gridTemplateColumns: "minmax(220px, 2fr) minmax(180px, 1fr) auto", gap: 10, margin: "16px 0" }}>
               <input aria-label="Image URL" placeholder="https://…" required type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} style={fieldStyle} />
               <input aria-label="Image description" placeholder="Alt text" maxLength={160} value={imageAlt} onChange={(event) => setImageAlt(event.target.value)} style={fieldStyle} />
