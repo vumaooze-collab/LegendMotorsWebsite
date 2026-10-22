@@ -55,7 +55,14 @@ try {
                     COALESCE((SELECT json_agg(json_build_object(\'url\', i."url", \'altText\', i."altText", \'isPrimary\', i."isPrimary") ORDER BY i."displayOrder") FROM "VehicleImage" i WHERE i."vehicleId" = v."id"), \'[]\'::json) AS images
              FROM "Vehicle" v WHERE v."published" = TRUE AND v."status" = \'AVAILABLE\' ORDER BY v."featured" DESC, v."createdAt" DESC LIMIT 100'
         );
-        respond(200, ['data' => $stmt->fetchAll()]);
+        $vehicles = $stmt->fetchAll();
+        foreach ($vehicles as &$vehicle) {
+            // PDO returns PostgreSQL json columns as strings; normalize the API contract to JSON arrays.
+            $decodedImages = json_decode((string)($vehicle['images'] ?? '[]'), true);
+            $vehicle['images'] = is_array($decodedImages) ? $decodedImages : [];
+        }
+        unset($vehicle);
+        respond(200, ['data' => $vehicles]);
     }
     if ($path === '/api/internal/vehicles' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         requireInternalKey();
