@@ -33,6 +33,9 @@ export default async function AdminDashboardPage() {
             <Link href="/admin/inventory" style={{ background: "#f97316", color: "#fff", borderRadius: 999, padding: "12px 20px", fontWeight: 700 }}>
               Inventory
             </Link>
+            <Link href="/admin/insights" style={{ background: "#7a4a2c", color: "#fff", borderRadius: 999, padding: "12px 20px", fontWeight: 700 }}>
+              Intelligence
+            </Link>
             <Link href="/" style={{ background: "#202321", color: "#fff", borderRadius: 999, padding: "12px 20px", fontWeight: 700 }}>
               Public site
             </Link>
