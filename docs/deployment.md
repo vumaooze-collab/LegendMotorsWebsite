@@ -55,7 +55,7 @@ The existing Neon `neondb` contains Neon Auth tables and the `public.playing_wit
    Remove-Variable adminPassword
    ```
 5. Deploy the application and verify `/login`, `/admin`, `/vehicles`, and `/api/vehicles`.
-6. Sign in as the administrator, create a vehicle using the dealership's verified details, add HTTPS image URLs, set the status to `AVAILABLE`, and publish it. Confirm that it appears publicly.
+6. Sign in as the administrator, create a vehicle using the dealership's verified details, upload several vehicle photos from a phone or computer (or add HTTPS image URLs), set the status to `AVAILABLE`, and publish it. Confirm that it appears publicly.
 7. Test logout, invalid login, admin permissions, vehicle editing, unpublishing, archiving, and the public contact links.
 
 ## Local development on Windows
@@ -93,30 +93,29 @@ Open `http://localhost:3000`. Keep `.env` private. Never send its contents or co
 - [ ] Production database is backed up and schema is applied intentionally.
 - [ ] Admin credentials are unique and stored securely.
 - [ ] Real stock data and photos have been verified by the dealership.
-- [ ] Vehicle create/edit/publish/unpublish/archive workflows are tested.
+- [ ] Vehicle create/edit/publish/unpublish/archive and bulk CSV import workflows are tested.
+- [ ] Multi-photo upload works on the deployed Vercel app with the production Neon storage environment variables.
 - [ ] Public inventory, individual vehicle details, and WhatsApp/contact links are tested on the deployed domain.
 - [ ] No secrets or test/demo stock are exposed publicly.
 - [ ] Client owns or has access to hosting, domain, database, and recovery credentials.
 
 ## Current known limitation
 
-Inventory image management stores externally hosted image URLs and image metadata. It is not a file-upload service. To support direct uploads, configure a persistent object-storage provider and implement authenticated upload handling before promising that feature to the client.
+Direct image upload is implemented through the production branch's Neon Object Storage `uploads` bucket. The upload route checks the signed-in user's `inventory:manage` permission, limits accepted file types and size, and stores only image metadata in PostgreSQL. Production uploads still depend on the four storage environment variables being configured in Vercel and must be tested after the deployment is healthy.
 
 ## Client vehicle photo workflow
 
 The client supplies the actual photographs for each vehicle. The editorial photographs in `public/images` are only for visual presentation and are labeled as illustrative; they must never be treated as dealership inventory photographs.
 
-The current admin workflow stores image URLs and metadata, not files. Before adding stock, the client or dealership should place each approved vehicle photograph in a reliable image host that provides a public, stable HTTPS URL. The URL must open the image itself without a login, temporary sharing token, or expiring access grant. JPEG, PNG, or WebP are suitable formats. Send the URL and a short, accurate description of the view to an authorized inventory manager through the dealership's private process.
-
-To add the photographs:
+To add photographs:
 
 1. Sign in at `/login` and open **Inventory**.
-2. Create the vehicle with verified information. Vehicle creation does not require photographs; an image-free vehicle can be saved as a draft.
-3. Choose **Images** for that vehicle, enter the public HTTPS image URL and descriptive alt text, then select **Add image URL**. The first image becomes primary automatically.
-4. Add further angles the same way. Use **Set primary** to choose the catalog/detail lead image; **Up** and **Down** change display order; **Remove** deletes an image record.
-5. Open the public vehicle page and confirm that each image loads and is framed correctly before publishing. A missing or unreachable image displays a neutral fallback. An invalid or non-HTTPS URL is rejected with the validation message.
+2. Create a vehicle with verified details. New stock should remain a draft until its information and photos are checked.
+3. Choose **Images** for that vehicle. Select multiple JPG, PNG, or WebP photos from the phone or computer (maximum 4 MB each). Uploads are handled by the authenticated inventory endpoint and saved to the Neon `uploads` bucket. Alternatively, enter a stable public HTTPS image URL.
+4. The first uploaded image becomes primary automatically. Use **Set primary** to change the lead image; **Up** and **Down** change display order; **Remove** deletes the image record.
+5. Open the public vehicle page and confirm every image loads and is framed correctly before publishing. Do not publish test stock or unverified dealership details.
 
-The dealership owns the image-hosting account and must keep each URL available for as long as its listing is public. The website does not upload files from a computer. Direct computer uploads require a persistent storage service, credentials, and a separately implemented authenticated upload flow.
+The dealership should retain ownership of its Neon/Vercel accounts and backup/recovery credentials. The production app must have the storage environment variables for the same Neon production branch. Do not expose S3 credentials in client-side code.
 
 ## Verified local test environment
 
@@ -134,7 +133,7 @@ Browser screenshot automation was unavailable during this handoff. Before launch
 
 ## Current launch blockers (verified 2026-10-10)
 
-- No Vercel project is linked in this checkout (`.vercel` is absent), and the Vercel connector is not connected. Connect the connector or link the repository to the client-owned Vercel account, set runtime `DATABASE_URL`, deploy, then run the live checks in the release checklist.
+- The Vercel project `legend-motors-website` exists and GitHub commits are triggering production deployments, but the recent deployments are failing. Build logs could not be retrieved in this session because Vercel returned a team-scope authorization error. Reauthorize access to the `vumaooze-collab` Vercel team, inspect the newest deployment logs, correct the reported build/configuration issue, and confirm a `READY` deployment before calling the site live.
 - The separate empty production database `legend_motors_app` has been provisioned on the Neon production branch. The initial Prisma schema migration has been applied transactionally and verified: 23 public tables including `_prisma_migrations`, one completed init migration, zero vehicles, and zero users. The existing `neondb` and its Neon Auth/sample data remain unchanged. Before connecting the app, create a least-privilege runtime role and use its connection string rather than the database owner role.
 - The intended production administrator email and password have not been supplied. The client must choose the email and enter a unique password in a trusted terminal at bootstrap time. Keep both bootstrap variables temporary and unset them afterward.
 - Login attempts now use durable PostgreSQL buckets: 8 attempts per normalized account per 30 minutes and 30 attempts per client address per 15 minutes; stale hashed buckets are pruned after 24 hours. Successful login clears both buckets. The address limiter depends on the trusted hosting proxy overwriting `x-forwarded-for` (Vercel also supplies `x-vercel-forwarded-for`). Keep the hosting firewall/rate-limit rules enabled where available.
