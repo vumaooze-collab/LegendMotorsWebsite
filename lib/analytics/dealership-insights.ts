@@ -72,9 +72,27 @@ export async function getDealershipInsights() {
     .map((item) => ({ ...item, salesValue: Math.round(item.salesValue) }));
 
   const feedText = marketNews.items.map((item) => `${item.title} ${item.summary}`).join(" ").toLowerCase();
-  const stockMentions = vehicles.map((vehicle) => ({
-    name: `${vehicle.make} ${vehicle.model}`,
-    mentions: (feedText.match(new RegExp(`${vehicle.make}\\\\s+${vehicle.model}`.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\  const interestCounts = new Map<string, number>();"), "gi")) || []).length,
+  const countOccurrences = (text: string, phrase: string) => {
+    const normalizedPhrase = phrase.trim().toLowerCase();
+    if (!normalizedPhrase) return 0;
+    return text.split(normalizedPhrase).length - 1;
+  };
+  const stockMentions = vehicles.map((vehicle) => {
+    const name = `${vehicle.make} ${vehicle.model}`;
+    return { name, mentions: countOccurrences(feedText, name) };
+  }).filter((item) => item.mentions > 0).sort((a, b) => b.mentions - a.mentions).slice(0, 5);
+  const marketThemes = [
+    { label: "Demand / popularity", terms: ["demand", "popular", "best-selling", "bestselling", "sales surge", "buyer interest"] },
+    { label: "Price changes", terms: ["price", "pricing", "discount", "cheaper", "expensive", "cost"] },
+    { label: "Fuel economy", terms: ["fuel economy", "fuel-efficient", "fuel efficient", "mileage", "consumption"] },
+    { label: "Electric / hybrid", terms: ["electric vehicle", "electric car", "hybrid"] },
+    { label: "Imports / supply", terms: ["import", "supply", "auction", "shipping", "customs"] },
+  ].map((theme) => ({
+    theme: theme.label,
+    mentions: theme.terms.reduce((count, term) => count + countOccurrences(feedText, term), 0),
+  })).filter((theme) => theme.mentions > 0).sort((a, b) => b.mentions - a.mentions);
+
+  const interestCounts = new Map<string, number>();"), "gi")) || []).length,
   })).filter((item) => item.mentions > 0).sort((a, b) => b.mentions - a.mentions).slice(0, 5);
   const marketThemes = [
     { label: "Demand / popularity", terms: ["demand", "popular", "best-selling", "bestselling", "sales surge", "buyer interest"] },
