@@ -7,7 +7,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
     ports:
-      - "${PHP_PORT:-8080}:80"
+      - "127.0.0.1:${PHP_PORT:-8080}:80"
     restart: unless-stopped
 
   python-analytics:
@@ -18,5 +18,5 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
     ports:
-      - "${PYTHON_PORT:-8000}:8000"
+      - "127.0.0.1:${PYTHON_PORT:-8000}:8000"
     restart: unless-stopped
