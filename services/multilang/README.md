@@ -24,6 +24,11 @@ This is an isolated service layer. It does not replace the existing Next.js logi
 
 The PHP service uses the PostgreSQL wire protocol through PDO and does not implement a second login system. Keep all internal routes private at the hosting/network layer as well as API-key protected. Do not expose the key to browser JavaScript.
 
+## Existing website integration (client delivery)
+The Next.js frontend is already connected to its production backend through same-origin API routes: the public vehicle catalog calls `GET /api/vehicles`, which uses Prisma to query PostgreSQL, and the admin inventory calls `/api/admin/inventory`, which checks the existing user session and permissions before using Prisma. Keep the browser on these routes; never put database credentials or `INTERNAL_API_KEY` in client-side code.
+
+The PHP and Python services in this folder are separate experimental/internal services and are **not wired into the customer-facing frontend**. They also are not deployed by the Next.js/Vercel build. For this client, do not add another service hop unless there is a concrete feature that needs it; the existing Next.js + Prisma path is the smallest working integration. The PHP/Python services need their own private hosting and secret configuration before any frontend/server proxy can call them.
+
 ## Automated integration coverage
 The backend workflow now starts a disposable PostgreSQL 16 service, loads `tests/fixtures/postgres-inventory.sql`, builds and starts the real PHP/Apache container, and calls it over HTTP. It verifies database readiness, the published/available inventory query, nested image JSON, exclusion of draft and sold vehicles, internal bearer authentication (missing and valid key), and 404 routing. This test database is synthetic and never touches the dealership database.
 
