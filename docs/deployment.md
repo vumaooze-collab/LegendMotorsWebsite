@@ -7,7 +7,7 @@ Legend Motors is a full-stack Next.js application. The public pages and admin da
 Recommended hosting:
 - **Web application:** Vercel (or another host that supports the Next.js Node.js runtime).
 - **Database:** managed PostgreSQL reachable from the web host.
-- **Vehicle photos:** use HTTPS image URLs from a reliable image host for now. The admin UI currently stores image URLs and metadata; it does not upload binary image files to storage.
+- **Vehicle photos:** the admin inventory screen supports multi-file JPG, PNG, and WebP uploads to the Neon Object Storage `uploads` bucket, plus HTTPS image URLs as a fallback. Direct uploads require the four storage environment variables below to be configured in Vercel.
 
 ## Required environment variables
 
@@ -84,7 +84,7 @@ Open `http://localhost:3000`. Keep `.env` private. Never send its contents or co
 - **Prisma cannot apply a schema through Neon:** check that the command uses a direct connection URL without `-pooler`; keep the pooled URL for serverless application runtime.
 - **The database integration test is skipped:** set `TEST_DATABASE_URL` for the current shell to a disposable database that already has the Prisma schema applied. The test intentionally ignores `DATABASE_URL` on its own.
 - **Login does not work:** confirm the administrator was bootstrapped on the same database used by the app, and that the account is active. The bootstrap script will not change an existing account unless `--reset-existing` is explicitly passed.
-- **A vehicle image is missing:** use an absolute HTTPS image URL that is publicly reachable. The current inventory system stores image URLs and metadata; it does not upload image files.
+- **A vehicle photo upload fails:** confirm `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, and `AWS_REGION` are configured for the production Neon branch and that the `uploads` bucket is public-read. Uploads allow JPG, PNG, or WebP files up to 4 MB each. HTTPS image URLs can be added manually as a fallback.
 
 ## Release checklist
 
