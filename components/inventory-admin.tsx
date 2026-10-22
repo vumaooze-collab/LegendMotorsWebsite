@@ -365,7 +365,7 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
             {canManage && <label style={{ display: "grid", gap: 8, margin: "16px 0", padding: 16, border: "1px dashed #cbd2ce", background: "#f8faf9", fontWeight: 650 }}>
               Upload vehicle photos
               <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={(event) => void uploadPhotos(event)} />
-              <span style={{ color: "#68716d", fontSize: 12, fontWeight: 400 }}>Select multiple images from your phone or computer. Photos are stored in the dealership's object-storage bucket.</span>
+              <span style={{ color: "#68716d", fontSize: 12, fontWeight: 400 }}>Select multiple images from your phone or computer. Photos are stored in the dealership&apos;s object-storage bucket.</span>
             </label>}
             {canManage && <form onSubmit={addImage} style={{ display: "grid", gridTemplateColumns: "minmax(220px, 2fr) minmax(180px, 1fr) auto", gap: 10, margin: "16px 0" }}>
               <input aria-label="Image URL" placeholder="https://…" required type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} style={fieldStyle} />
