@@ -1,0 +1,25 @@
+services:
+  php-api:
+    build:
+      context: ./php
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
+    ports:
+      - "${PHP_PORT:-8080}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$c=curl_init('http://127.0.0.1/health'); curl_setopt($$c,CURLOPT_RETURNTRANSFER,true); $$r=curl_exec($$c); exit($$r===false?1:0);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  python-analytics:
+    build:
+      context: ./python
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
+    ports:
+      - "${PYTHON_PORT:-8000}:8000"
+    restart: unless-stopped
