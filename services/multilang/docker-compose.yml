@@ -2,6 +2,7 @@ services:
   php-api:
     build:
       context: ./php
+      dockerfile: Dockerfile
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
@@ -11,8 +12,8 @@ services:
 
   python-analytics:
     build:
-      context: ./python
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: python/Dockerfile
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env}
