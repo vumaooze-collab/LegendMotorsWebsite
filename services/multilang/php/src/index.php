@@ -21,7 +21,7 @@ function db(): PDO {
     if (!in_array($scheme, ['postgres', 'postgresql'], true)) throw new RuntimeException('Unsupported database URL scheme');
     parse_str($parts['query'] ?? '', $query);
     $database = rawurldecode(ltrim($parts['path'], '/'));
-    if ($database === '') throw new RuntimeException('Database name missing');
+    if ($database === '' || !preg_match('/^[A-Za-z0-9_.-]+$/', $database)) throw new RuntimeException('Invalid database name');
     $dsn = 'pgsql:host=' . $parts['host'] . ';port=' . ($parts['port'] ?? 5432) . ';dbname=' . $database;
     if (isset($query['sslmode'])) {
         $sslmode = (string)$query['sslmode'];
