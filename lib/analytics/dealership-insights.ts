@@ -14,7 +14,7 @@ export async function getDealershipInsights() {
       select: {
         id: true, stockNumber: true, make: true, model: true, year: true,
         price: true, status: true, published: true, createdAt: true,
-        saleItems: {
+        sales: {
           where: { createdAt: { gte: salesSince } },
           select: { createdAt: true, quantity: true, unitPrice: true },
         },
@@ -49,7 +49,7 @@ export async function getDealershipInsights() {
     .map((v) => ({
       id: v.id, name: `${v.year} ${v.make} ${v.model}`, stockNumber: v.stockNumber,
       price: money(v.price), ageDays: ageDays(v.createdAt),
-      soldUnits90d: v.saleItems.reduce((sum, item) => sum + item.quantity, 0),
+      soldUnits90d: v.sales.reduce((sum, item) => sum + item.quantity, 0),
     }))
     .filter((v) => v.ageDays >= 45 && v.soldUnits90d === 0)
     .sort((a, b) => b.ageDays - a.ageDays)
