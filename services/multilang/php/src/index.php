@@ -45,7 +45,7 @@ try {
     if ($path === '/api/vehicles' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         $stmt = db()->query(
             'SELECT v."id", v."stockNumber", v."make", v."model", v."variant", v."year", v."price"::text AS "price", v."currency", v."mileage", v."transmission", v."fuelType", v."bodyType", v."color", v."description", v."featured", v."createdAt",
-                    COALESCE((SELECT json_agg(json_build_object('url', i."url", 'altText', i."altText", 'isPrimary', i."isPrimary") ORDER BY i."displayOrder") FROM "VehicleImage" i WHERE i."vehicleId" = v."id"), '[]'::json) AS images
+                    COALESCE((SELECT json_agg(json_build_object($url$, i."url", $altText$, i."altText", $isPrimary$, i."isPrimary") ORDER BY i."displayOrder") FROM "VehicleImage" i WHERE i."vehicleId" = v."id"), $[]$::json) AS images
              FROM "Vehicle" v WHERE v."published" = TRUE AND v."status" = 'AVAILABLE' ORDER BY v."featured" DESC, v."createdAt" DESC LIMIT 100'
         );
         respond(200, ['data' => $stmt->fetchAll()]);
