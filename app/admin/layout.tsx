@@ -17,6 +17,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     ...(hasPermission(user, "dashboard:view") ? [{ label: "Dashboard", href: "/admin" }] : []),
     ...(hasPermission(user, "inventory:view") ? [{ label: "Inventory", href: "/admin/inventory" }] : []),
     ...(hasPermission(user, "customers:view") ? [{ label: "Customers", href: "/admin/customers" }] : []),
+    ...(hasPermission(user, "sales:view") ? [{ label: "Sales", href: "/admin/sales" }] : []),
+    ...(hasPermission(user, "expenses:manage") ? [{ label: "Expenses", href: "/admin/expenses" }] : []),
+    ...(hasPermission(user, "reports:view") ? [{ label: "Reports", href: "/admin/reports" }] : []),
+    ...(hasPermission(user, "users:manage") ? [{ label: "Users", href: "/admin/users" }] : []),
   ];
 
   return (
