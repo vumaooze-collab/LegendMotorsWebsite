@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
       - name: PHP syntax check
         run: php -l services/multilang/php/src/index.php
       - name: Python syntax check
@@ -23,12 +27,12 @@ jobs:
       - name: C++ compile with warnings as errors
         run: g++ -std=c++17 -O2 -Wall -Wextra -Werror services/multilang/cpp/inventory_priority.cpp -o /tmp/inventory_priority
       - name: C++ valid input test
-        run: |
-          /tmp/inventory_priority 30 1 1 | grep -q '"score":35'
+        run: /tmp/inventory_priority 30 1 1 | grep -q '"score":35'
       - name: C++ rejects invalid input
         run: |
           if /tmp/inventory_priority -1 1 0; then exit 1; else echo "invalid input rejected"; fi
       - name: Build both service containers
-        run: |
-          cd services/multilang
-          docker compose build
+        env:
+          DATABASE_URL: postgresql://test:test@127.0.0.1:5432/legend_motors_app?sslmode=require
+          INTERNAL_API_KEY: ci-only-test-key-that-is-at-least-32-chars
+        run: docker compose -f services/multilang/docker-compose.yml build
