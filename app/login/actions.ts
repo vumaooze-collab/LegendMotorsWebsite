@@ -22,29 +22,41 @@ export async function login(formData: FormData) {
     || requestHeaders.get("x-real-ip")?.trim()
     || forwardedFor?.at(-1)
     || null;
-  const attempt = await consumeLoginAttempt(email, address);
+  let attempt;
+  try {
+    attempt = await consumeLoginAttempt(email, address);
+  } catch {
+    redirect("/login?error=Login+service+temporarily+unavailable.+Please+try+again+shortly.");
+  }
 
   if (!attempt.allowed) {
     redirect("/login?error=Too+many+sign-in+attempts.+Try+again+later.");
   }
 
-  const user = await verifyUserCredentials(email, password);
+  let user;
+  try {
+    user = await verifyUserCredentials(email, password);
+  } catch {
+    redirect("/login?error=Login+service+temporarily+unavailable.+Please+try+again+shortly.");
+  }
 
   if (!user) {
     redirect("/login?error=Invalid email or password.");
   }
 
-  await clearLoginAttempts(email, address);
+  try {
+    await clearLoginAttempts(email, address);
+    const { token } = await createSessionForUser(user.id);
+    await setSessionCookie(token);
+  } catch {
+    redirect("/login?error=Could+not+start+your+session.+Please+try+again+shortly.");
+  }
 
-  const { token } = await createSessionForUser(user.id);
-  await setSessionCookie(token);
-
+  // Updating the last-login timestamp is non-critical and must not break a valid sign-in.
   await prisma.user.update({
     where: { id: user.id },
-    data: {
-      lastLoginAt: new Date(),
-    },
-  });
+    data: { lastLoginAt: new Date() },
+  }).catch(() => undefined);
 
   redirect("/admin");
 }
