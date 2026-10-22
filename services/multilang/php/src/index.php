@@ -20,8 +20,15 @@ function db(): PDO {
     $scheme = $parts['scheme'] ?? 'postgresql';
     if (!in_array($scheme, ['postgres', 'postgresql'], true)) throw new RuntimeException('Unsupported database URL scheme');
     parse_str($parts['query'] ?? '', $query);
-    $dsn = 'pgsql:host=' . $parts['host'] . ';port=' . ($parts['port'] ?? 5432) . ';dbname=' . ltrim($parts['path'], '/');
-    if (isset($query['sslmode'])) $dsn .= ';sslmode=' . preg_replace('/[^a-z]/', '', (string)$query['sslmode']);
+    $database = rawurldecode(ltrim($parts['path'], '/'));
+    if ($database === '') throw new RuntimeException('Database name missing');
+    $dsn = 'pgsql:host=' . $parts['host'] . ';port=' . ($parts['port'] ?? 5432) . ';dbname=' . $database;
+    if (isset($query['sslmode'])) {
+        $sslmode = (string)$query['sslmode'];
+        $allowedSslModes = ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'];
+        if (!in_array($sslmode, $allowedSslModes, true)) throw new RuntimeException('Invalid database SSL mode');
+        $dsn .= ';sslmode=' . $sslmode;
+    }
     $pdo = new PDO($dsn, rawurldecode($parts['user'] ?? ''), rawurldecode($parts['pass'] ?? ''), [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -45,8 +52,8 @@ try {
     if ($path === '/api/vehicles' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         $stmt = db()->query(
             'SELECT v."id", v."stockNumber", v."make", v."model", v."variant", v."year", v."price"::text AS "price", v."currency", v."mileage", v."transmission", v."fuelType", v."bodyType", v."color", v."description", v."featured", v."createdAt",
-                    COALESCE((SELECT json_agg(json_build_object($url$, i."url", $altText$, i."altText", $isPrimary$, i."isPrimary") ORDER BY i."displayOrder") FROM "VehicleImage" i WHERE i."vehicleId" = v."id"), $[]$::json) AS images
-             FROM "Vehicle" v WHERE v."published" = TRUE AND v."status" = $AVAILABLE$ ORDER BY v."featured" DESC, v."createdAt" DESC LIMIT 100'
+                    COALESCE((SELECT json_agg(json_build_object(\'url\', i."url", \'altText\', i."altText", \'isPrimary\', i."isPrimary") ORDER BY i."displayOrder") FROM "VehicleImage" i WHERE i."vehicleId" = v."id"), \'[]\'::json) AS images
+             FROM "Vehicle" v WHERE v."published" = TRUE AND v."status" = \'AVAILABLE\' ORDER BY v."featured" DESC, v."createdAt" DESC LIMIT 100'
         );
         respond(200, ['data' => $stmt->fetchAll()]);
     }
