@@ -2,8 +2,6 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/authorization";
 import { getDealershipInsights } from "@/lib/analytics/dealership-insights";
-import { getMarketFeedUrl } from "@/lib/analytics/market-feed";
-import MarketSourceForm from "@/app/admin/insights/market-source-form";
 
 export const dynamic = "force-dynamic";
 
@@ -27,31 +25,12 @@ export default async function InsightsPage() {
     return <main className="admin-main"><div style={{ maxWidth: 1100, margin: "0 auto" }}><h1>Dealership intelligence</h1><p role="alert">The database could not return insights. Confirm the production DATABASE_URL and that the Prisma schema has been applied.</p><Link href="/admin">← Dashboard</Link></div></main>;
   }
 
-  const marketFeedUrl = await getMarketFeedUrl().catch(() => "");
-
   return <main className="admin-main"><div style={{ maxWidth: 1280, margin: "0 auto" }}>
     <header style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
       <div><p style={{ ...muted, color: "#7a4a2c", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>Database-backed analysis</p><h1 style={{ margin: "8px 0", fontSize: 38 }}>Dealership intelligence</h1><p style={muted}>Rank valuable stock, identify ageing inventory, and surface recorded sales and enquiry trends.</p></div>
       <Link href="/admin" style={{ color: "#202321", fontWeight: 700 }}>← Dashboard</Link>
     </header>
     <p style={{ ...muted, ...panel, marginBottom: 20 }}>Updated {new Date(insights.generatedAt).toLocaleString("en-MW")}. Sales window: 90 days. Enquiry window: 30 days. Slow-stock threshold: 45 days.</p>
-    <article style={{ ...panel, marginBottom: 22 }}>
-      <h2 style={{ marginTop: 0 }}>Connect a market-news source</h2>
-      <p style={muted}>Configure the public RSS/Atom feed the analysis should read. The URL is stored in the BusinessSetting database table and can be changed by an administrator.</p>
-      <MarketSourceForm initialUrl={marketFeedUrl} />
-      <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #eef0f1" }}>
-        <h3 style={{ margin: "0 0 8px" }}>Feed analysis status</h3>
-        <p style={muted}>{insights.marketNews.status}</p>
-        {insights.marketNews.fetchedAt ? <p style={muted}>Last fetched: {new Date(insights.marketNews.fetchedAt).toLocaleString("en-MW")}</p> : null}
-        {insights.marketNews.marketThemes.length ? <p style={muted}>Keyword themes: {insights.marketNews.marketThemes.map((theme) => `${theme.theme} (${theme.mentions})`).join(" · ")}</p> : null}
-        {insights.marketNews.stockMentions.length ? <p style={muted}>Inventory models mentioned: {insights.marketNews.stockMentions.map((item) => `${item.name} (${item.mentions})`).join(" · ")}</p> : null}
-        {insights.marketNews.items.length ? <ul style={{ paddingLeft: 20 }}>{insights.marketNews.items.slice(0, 8).map((item, index) => <li key={item.link || item.title + index} style={{ marginBottom: 10 }}>
-          <strong>{item.title}</strong>{item.publishedAt ? <span style={muted}> — {item.publishedAt}</span> : null}
-          {item.summary ? <p style={{ ...muted, margin: "4px 0" }}>{item.summary}</p> : null}
-          {item.link ? <a href={item.link} target="_blank" rel="noreferrer" style={{ color: "#7a4a2c", fontSize: 13 }}>Open source article</a> : null}
-        </li>)}</ul> : null}
-      </div>
-    </article>
     <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14, marginBottom: 22 }}>
       {[
         ["Active inventory value", money(insights.inventory.activeInventoryValue)],
@@ -69,7 +48,7 @@ export default async function InsightsPage() {
       <article style={panel}><h2 style={{ marginTop: 0 }}>Hot models in recorded sales</h2><p style={muted}>Ranked by units recorded in the last 90 days, then recorded sales value.</p>{insights.hotModels.length ? <ol>{insights.hotModels.map((v) => <li key={v.name} style={{ marginBottom: 10 }}><strong>{v.name}</strong> — {v.units} unit(s), {money(v.salesValue)}</li>)}</ol> : <p style={muted}>Not enough recorded sales yet to identify hot-selling models.</p>}</article>
       <article style={panel}><h2 style={{ marginTop: 0 }}>Most common enquiry interests</h2><p style={muted}>Categories stored by the public enquiry form in the last 30 days.</p>{insights.enquiryInterests.length ? <ol>{insights.enquiryInterests.map((v) => <li key={v.interest} style={{ marginBottom: 10, textTransform: "capitalize" }}>{v.interest} — {v.enquiries} enquiry/enquiries</li>)}</ol> : <p style={muted}>No enquiries recorded in this window.</p>}</article>
     </section>
-    <article style={{ ...panel, background: "#fff8e8", borderColor: "#ead7a4" }}><h2 style={{ marginTop: 0 }}>How to interpret this</h2><ul>{insights.notes.map((note) => <li key={note} style={{ marginBottom: 8 }}>{note}</li>)}</ul><p style={muted}>Market-feed keyword counts are directional signals only. They do not prove local demand or calculate fair prices; verify source credibility and compare several sources before making buying or pricing decisions.</p></article>
+    <article style={{ ...panel, background: "#fff8e8", borderColor: "#ead7a4" }}><h2 style={{ marginTop: 0 }}>How to interpret this</h2><ul>{insights.notes.map((note) => <li key={note} style={{ marginBottom: 8 }}>{note}</li>)}</ul><p style={muted}>This is operational intelligence from the connected dealership database, not an external market-price feed. A market news source will be integrated separately.</p></article>
   </div></main>;
 }
 
