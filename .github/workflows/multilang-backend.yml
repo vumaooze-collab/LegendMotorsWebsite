@@ -1,0 +1,34 @@
+name: Multi-language backend checks
+
+on:
+  push:
+    branches: [feature/multilang-backend-v1]
+    paths:
+      - "services/multilang/**"
+      - ".github/workflows/multilang-backend.yml"
+  pull_request:
+    paths:
+      - "services/multilang/**"
+      - ".github/workflows/multilang-backend.yml"
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax check
+        run: php -l services/multilang/php/src/index.php
+      - name: Python syntax check
+        run: python -m py_compile services/multilang/python/app.py
+      - name: C++ compile with warnings as errors
+        run: g++ -std=c++17 -O2 -Wall -Wextra -Werror services/multilang/cpp/inventory_priority.cpp -o /tmp/inventory_priority
+      - name: C++ valid input test
+        run: |
+          /tmp/inventory_priority 30 1 1 | grep -q '"score":35'
+      - name: C++ rejects invalid input
+        run: |
+          if /tmp/inventory_priority -1 1 0; then exit 1; else echo "invalid input rejected"; fi
+      - name: Build both service containers
+        run: |
+          cd services/multilang
+          docker compose build
