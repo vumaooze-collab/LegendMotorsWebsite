@@ -13,7 +13,7 @@ This is an isolated service layer. It does not replace the existing Next.js logi
 2. Set `DATABASE_URL` to a PostgreSQL connection string for the dealership database. Keep it secret and never commit it.
 3. Set a long random `INTERNAL_API_KEY` (at least 32 characters).
 4. Run `docker compose up --build`.
-5. PHP API: `http://localhost:8080/health`; Python API: `http://localhost:8000/health`.
+5. PHP API: `http://127.0.0.1:8080/health`; Python API: `http://127.0.0.1:8000/health`. The Compose ports bind to localhost by default.
 
 ## Routes
 - PHP `GET /health`: service/database readiness.
