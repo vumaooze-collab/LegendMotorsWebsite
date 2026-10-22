@@ -14,6 +14,10 @@ function formatMoney(amount: number | string) {
 
 export default async function ExpensesPage({ searchParams }: ExpensesPageProps) {
   const user = await getCurrentUser();
+  if (!hasPermission(user, "expenses:view")) {
+    return <main className="admin-main"><div style={{ maxWidth: 1100, margin: "0 auto" }}><h1>Expenses</h1><p>You do not have permission to view dealership expenses.</p><Link href="/admin">← Dashboard</Link></div></main>;
+  }
+
   const canManage = hasPermission(user, "expenses:manage");
   const params = searchParams ? await searchParams : {};
   const [expenses, total] = await Promise.all([
