@@ -24,5 +24,8 @@ This is an isolated service layer. It does not replace the existing Next.js logi
 
 The PHP service uses the PostgreSQL wire protocol through PDO and does not implement a second login system. Keep all internal routes private at the hosting/network layer as well as API-key protected. Do not expose the key to browser JavaScript.
 
+## Automated integration coverage
+The backend workflow now starts a disposable PostgreSQL 16 service, loads `tests/fixtures/postgres-inventory.sql`, builds and starts the real PHP/Apache container, and calls it over HTTP. It verifies database readiness, the published/available inventory query, nested image JSON, exclusion of draft and sold vehicles, internal bearer authentication (missing and valid key), and 404 routing. This test database is synthetic and never touches the dealership database.
+
 ## Production caveats
 This is a deployable scaffold, not a production release. Run it behind HTTPS, configure private service networking, set a rotated secret in the host's secret manager, use a least-privilege database role, add monitoring and rate limits, and test against a staging database first. Do not point this at production until its host and network access are configured. The current Vercel Next.js application remains the production entry point. No deployment or database migration is performed by this branch.
