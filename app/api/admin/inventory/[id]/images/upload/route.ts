@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { hasPermission } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
-import { addInventoryImage, inventoryError } from "@/lib/inventory";
+import { addInventoryImage, getInventoryVehicle, inventoryError } from "@/lib/inventory";
 
 export const runtime = "nodejs";
 
@@ -102,6 +102,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "Each photo must be between 1 byte and 4 MB." }, { status: 413 });
     }
 
+    const vehicle = await getInventoryVehicle(id);
+    if (!vehicle) return NextResponse.json({ error: "Vehicle not found." }, { status: 404 });
+
     const key = `vehicles/${id}/${randomUUID()}.${extension}`;
     const { uploadUrl, publicUrl } = buildUploadUrl(key);
     const upload = await fetch(uploadUrl, {
@@ -119,8 +122,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const image = await addInventoryImage(id, {
       url: publicUrl,
       altText: altText || null,
-      displayOrder: 0,
-      isPrimary: false,
+      displayOrder: vehicle.images.length,
+      isPrimary: vehicle.images.length === 0,
     }, user.id);
     return NextResponse.json({ image }, { status: 201 });
   } catch (error) {
