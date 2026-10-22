@@ -22,7 +22,7 @@ export async function login(formData: FormData) {
     || requestHeaders.get("x-real-ip")?.trim()
     || forwardedFor?.at(-1)
     || null;
-  let attempt;
+  let attempt: Awaited<ReturnType<typeof consumeLoginAttempt>>;
   try {
     attempt = await consumeLoginAttempt(email, address);
   } catch {
@@ -33,7 +33,7 @@ export async function login(formData: FormData) {
     redirect("/login?error=Too+many+sign-in+attempts.+Try+again+later.");
   }
 
-  let user;
+  let user: Awaited<ReturnType<typeof verifyUserCredentials>>;
   try {
     user = await verifyUserCredentials(email, password);
   } catch {
