@@ -11,19 +11,14 @@ services:
       - login-net
 
   python-auth:
-    build: ./python
+    build:
+      context: .
+      dockerfile: python/Dockerfile
     environment:
       DATABASE_URL: ${DATABASE_URL}
-    depends_on:
-      - cpp-risk
     networks:
       - login-net
     restart: unless-stopped
-
-  cpp-risk:
-    build: ./cpp
-    networks:
-      - login-net
 
 networks:
   login-net:
