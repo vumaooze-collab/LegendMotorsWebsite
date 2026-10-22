@@ -38,9 +38,11 @@ function db(): PDO {
 }
 function requireInternalKey(): void {
     $expected = getenv('INTERNAL_API_KEY') ?: '';
-    $given = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-    if (strlen($expected) < 32 || !str_starts_with($given, 'Bearer ')) respond(503, ['error' => 'Internal API is not configured']);
-    $provided = substr($given, 7);
+    $given = trim($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+    if (strlen($expected) < 32) respond(503, ['error' => 'Internal API is not configured']);
+    if (strncasecmp($given, 'Bearer ', 7) !== 0) respond(401, ['error' => 'Unauthorized']);
+    $provided = trim(substr($given, 7));
+    if ($provided === '' || str_contains($provided, ' ')) respond(401, ['error' => 'Unauthorized']);
     if (!hash_equals($expected, $provided)) respond(401, ['error' => 'Unauthorized']);
 }
 try {
