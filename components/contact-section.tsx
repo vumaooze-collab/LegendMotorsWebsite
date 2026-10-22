@@ -5,23 +5,53 @@ import { BUSINESS, whatsappUrl } from "@/data/business";
 
 export function ContactSection() {
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const name = String(data.get("name") || "");
-    const phone = String(data.get("phone") || "");
+    if (submitting) return;
+
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const name = String(data.get("name") || "").trim();
+    const phone = String(data.get("phone") || "").trim();
     const interest = String(data.get("interest") || "vehicle");
-    const message = String(data.get("message") || "");
-    const text = [
-      "Hello Legend Motors, I would like to make an enquiry.",
-      `Name: ${name}`,
-      `Phone: ${phone}`,
-      `Interest: ${interest}`,
-      `Message: ${message || "I would like more information."}`,
-    ].join("\n");
-    window.open(whatsappUrl(text), "_blank", "noopener,noreferrer");
-    setSent(true);
+    const message = String(data.get("message") || "").trim();
+    const website = String(data.get("website") || "");
+
+    setSubmitting(true);
+    setError("");
+    setSent(false);
+
+    try {
+      const response = await fetch("/api/enquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, interest, message, website }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error || "We could not save your enquiry. Please try again.");
+        return;
+      }
+
+      const text = [
+        "Hello Legend Motors, I would like to make an enquiry.",
+        `Name: ${name}`,
+        `Phone: ${phone}`,
+        `Interest: ${interest}`,
+        `Message: ${message || "I would like more information."}`,
+      ].join("\n");
+
+      setSent(true);
+      window.location.assign(whatsappUrl(text));
+    } catch {
+      setError("Connection problem. Please try again or contact the dealership directly on WhatsApp.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -32,7 +62,7 @@ export function ContactSection() {
           <h2 className="section-heading" id="contact-heading">Ready to find the right car?</h2>
           <p>
             Speak directly with Legend Motors about a vehicle, finance, sourcing or trade-in.
-            Your enquiry is sent to the dealership through WhatsApp.
+            Your enquiry is recorded for dealership follow-up and then sent to WhatsApp.
           </p>
           <dl className="contact-details">
             <div className="contact-detail"><dt>Phone / WhatsApp</dt><dd><a href={`tel:+${BUSINESS.phoneInternational}`}>{BUSINESS.phoneDisplay}</a></dd></div>
@@ -48,10 +78,10 @@ export function ContactSection() {
 
         <form className="enquiry-form" onSubmit={handleSubmit}>
           <h3>Send a vehicle enquiry</h3>
-          <p className="form-note">Complete the form and we will open a WhatsApp conversation with the dealership.</p>
+          <p className="form-note">Your enquiry is saved for the dealership team, then WhatsApp opens so you can continue the conversation.</p>
           <div className="form-grid">
-            <div className="form-field"><label htmlFor="enquiry-name">Your name</label><input autoComplete="name" id="enquiry-name" name="name" required /></div>
-            <div className="form-field"><label htmlFor="enquiry-phone">Phone / WhatsApp</label><input autoComplete="tel" id="enquiry-phone" name="phone" required type="tel" /></div>
+            <div className="form-field"><label htmlFor="enquiry-name">Your name</label><input autoComplete="name" id="enquiry-name" name="name" maxLength={100} required /></div>
+            <div className="form-field"><label htmlFor="enquiry-phone">Phone / WhatsApp</label><input autoComplete="tel" id="enquiry-phone" name="phone" maxLength={30} required type="tel" /></div>
             <div className="form-field form-field--wide">
               <label htmlFor="enquiry-interest">What do you need?</label>
               <select defaultValue="vehicle" id="enquiry-interest" name="interest">
@@ -62,10 +92,17 @@ export function ContactSection() {
                 <option value="service">Service / parts enquiry</option>
               </select>
             </div>
-            <div className="form-field form-field--wide"><label htmlFor="enquiry-message">Your message</label><textarea id="enquiry-message" name="message" placeholder="Tell us the make, model, budget or service you need." /></div>
+            <div className="form-field form-field--wide"><label htmlFor="enquiry-message">Your message</label><textarea id="enquiry-message" name="message" maxLength={1500} placeholder="Tell us the make, model, budget or service you need." /></div>
+            <div aria-hidden="true" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)" }}>
+              <label htmlFor="enquiry-website">Leave this field empty</label>
+              <input autoComplete="off" id="enquiry-website" name="website" tabIndex={-1} />
+            </div>
           </div>
-          <button className="button button--charcoal form-submit" type="submit">Send to WhatsApp <span aria-hidden="true">→</span></button>
-          {sent && <p className="form-status" role="status">WhatsApp opened with your enquiry. Continue the conversation there.</p>}
+          <button className="button button--charcoal form-submit" type="submit" disabled={submitting}>
+            {submitting ? "Saving enquiry…" : "Send to WhatsApp"} <span aria-hidden="true">→</span>
+          </button>
+          {error && <p className="form-status" role="alert">{error}</p>}
+          {sent && <p className="form-status" role="status">Enquiry saved. Opening WhatsApp…</p>}
         </form>
       </div>
     </section>
