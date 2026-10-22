@@ -56,9 +56,12 @@ async function consumeBucket(
 }
 
 export async function consumeLoginAttempt(email: string, address?: string | null, now = new Date()) {
+  // Removing expired buckets is housekeeping only. A cleanup failure must not
+  // turn every otherwise-valid login into a service-unavailable error.
   await prisma.loginRateLimitBucket.deleteMany({
     where: { updatedAt: { lt: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
-  });
+  }).catch(() => undefined);
+
   const accountKey = hashBucketKey("account", email.trim().toLowerCase());
   const account = await consumeBucket(accountKey, ACCOUNT_MAX_ATTEMPTS, ACCOUNT_WINDOW_SECONDS, now);
   const addressKey = address?.trim() ? hashBucketKey("address", address.trim()) : null;
