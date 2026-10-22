@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
+import { getMarketNewsSignals } from "@/lib/analytics/market-feed";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const money = (value: unknown) => Number(value ?? 0);
@@ -8,7 +9,7 @@ export async function getDealershipInsights() {
   const salesSince = new Date(now.getTime() - 90 * DAY_MS);
   const enquiriesSince = new Date(now.getTime() - 30 * DAY_MS);
 
-  const [vehicles, enquiries, recentSales] = await Promise.all([
+  const [vehicles, enquiries, recentSales, marketNews] = await Promise.all([
     prisma.vehicle.findMany({
       orderBy: { createdAt: "asc" },
       select: {
@@ -31,6 +32,7 @@ export async function getDealershipInsights() {
         vehicle: { select: { id: true, make: true, model: true, year: true } },
       },
     }),
+    getMarketNewsSignals(),
   ]);
 
   const activeStock = vehicles.filter((v) => v.status === "AVAILABLE" || v.status === "RESERVED");
@@ -69,6 +71,20 @@ export async function getDealershipInsights() {
     .slice(0, 5)
     .map((item) => ({ ...item, salesValue: Math.round(item.salesValue) }));
 
+  const feedText = marketNews.items.map((item) => `${item.title} ${item.summary}`).join(" ").toLowerCase();
+  const stockMentions = vehicles.map((vehicle) => ({
+    name: `${vehicle.make} ${vehicle.model}`,
+    mentions: (feedText.match(new RegExp(`${vehicle.make}\\\\s+${vehicle.model}`.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\  const interestCounts = new Map<string, number>();"), "gi")) || []).length,
+  })).filter((item) => item.mentions > 0).sort((a, b) => b.mentions - a.mentions).slice(0, 5);
+  const marketThemes = [
+    { label: "Demand / popularity", terms: ["demand", "popular", "best-selling", "bestselling", "sales surge", "buyer interest"] },
+    { label: "Price changes", terms: ["price", "pricing", "discount", "cheaper", "expensive", "cost"] },
+    { label: "Fuel economy", terms: ["fuel economy", "fuel-efficient", "fuel efficient", "mileage", "consumption"] },
+    { label: "Electric / hybrid", terms: ["electric vehicle", "electric car", "ev ", "hybrid"] },
+    { label: "Imports / supply", terms: ["import", "supply", "auction", "shipping", "customs"] },
+  ].map((theme) => ({ theme: theme.label, mentions: theme.terms.reduce((count, term) => count + (feedText.match(new RegExp(term.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\  const interestCounts = new Map<string, number>();"), "g")) || []).length, 0) }))
+    .filter((theme) => theme.mentions > 0).sort((a, b) => b.mentions - a.mentions);
+
   const interestCounts = new Map<string, number>();
   for (const enquiry of enquiries) {
     const category = (enquiry.vehicleName || "unspecified").trim().toLowerCase();
@@ -97,11 +113,13 @@ export async function getDealershipInsights() {
     slowStock,
     hotModels,
     enquiryInterests,
+    marketNews: { ...marketNews, stockMentions, marketThemes },
     notes: [
       "Hot models are ranked from recorded vehicle sales in the last 90 days, not national market data.",
       "Enquiry interests are grouped from the enquiry category stored by the website; they do not identify individual vehicles unless the enquiry form is updated to capture a stock number.",
       "Slow stock means available or reserved vehicles at least 45 days old with no recorded sale-item activity in the last 90 days. Review manually before discounting.",
       "Results are only as complete as the records entered into the connected database.",
+      "Market-feed themes are simple keyword counts from the configured feed, not proof of local sales demand or statistically validated price estimates.",
     ],
   };
 }
