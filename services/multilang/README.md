@@ -1,0 +1,36 @@
+# Legends Motors multi-language backend (v1)
+
+This is an isolated service layer. It does not replace the existing Next.js login or change the Prisma schema.
+
+## Services
+- **PHP 8.3 / Apache**: internal dealership API for read-only inventory and readiness checks.
+- **Python / FastAPI**: internal market-news analysis endpoint for headlines supplied by an administrator or a future verified feed adapter.
+- **C++17**: small deterministic inventory-priority scoring helper; it is advisory only and is not used for authentication, prices, or financial decisions.
+- **PostgreSQL / Neon**: same existing database, accessed with a least-privilege database role.
+
+## Run
+1. Copy `.env.example` to a private `.env` file in this directory.
+2. Set `DATABASE_URL` to a PostgreSQL connection string for the dealership database. Keep it secret and never commit it.
+3. Set a long random `INTERNAL_API_KEY` (at least 32 characters).
+4. Run `docker compose up --build`.
+5. PHP API: `http://127.0.0.1:8080/health`; Python API: `http://127.0.0.1:8000/health`. The Compose ports bind to localhost by default.
+
+## Routes
+- PHP `GET /health`: service/database readiness.
+- PHP `GET /api/vehicles`: public inventory fields for vehicles marked published and available.
+- PHP `GET /api/internal/vehicles`: internal inventory metadata; requires `Authorization: Bearer <INTERNAL_API_KEY>`.
+- Python `GET /health`: readiness.
+- Python `POST /analyze/headlines`: analyze a bounded list of provided headlines; requires the internal API key.
+
+The PHP service uses the PostgreSQL wire protocol through PDO and does not implement a second login system. Keep all internal routes private at the hosting/network layer as well as API-key protected. Do not expose the key to browser JavaScript.
+
+## Existing website integration (client delivery)
+The Next.js frontend is already connected to its production backend through same-origin API routes: the public vehicle catalog calls `GET /api/vehicles`, which uses Prisma to query PostgreSQL, and the admin inventory calls `/api/admin/inventory`, which checks the existing user session and permissions before using Prisma. Keep the browser on these routes; never put database credentials or `INTERNAL_API_KEY` in client-side code.
+
+The PHP and Python services in this folder are separate experimental/internal services and are **not wired into the customer-facing frontend**. They also are not deployed by the Next.js/Vercel build. For this client, do not add another service hop unless there is a concrete feature that needs it; the existing Next.js + Prisma path is the smallest working integration. The PHP/Python services need their own private hosting and secret configuration before any frontend/server proxy can call them.
+
+## Automated integration coverage
+The backend workflow now starts a disposable PostgreSQL 16 service, loads `tests/fixtures/postgres-inventory.sql`, builds and starts the real PHP/Apache container, and calls it over HTTP. It verifies database readiness, the published/available inventory query, nested image JSON, exclusion of draft and sold vehicles, internal bearer authentication (missing and valid key), and 404 routing. This test database is synthetic and never touches the dealership database.
+
+## Production caveats
+This is a deployable scaffold, not a production release. Run it behind HTTPS, configure private service networking, set a rotated secret in the host's secret manager, use a least-privilege database role, add monitoring and rate limits, and test against a staging database first. Do not point this at production until its host and network access are configured. The current Vercel Next.js application remains the production entry point. No deployment or database migration is performed by this branch.

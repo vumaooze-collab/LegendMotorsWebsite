@@ -1,0 +1,81 @@
+name: Multi-language backend checks
+
+on:
+  push:
+    branches: [feature/multilang-backend-v1]
+    paths:
+      - "services/multilang/**"
+      - ".github/workflows/multilang-backend.yml"
+  pull_request:
+    paths:
+      - "services/multilang/**"
+      - ".github/workflows/multilang-backend.yml"
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: legend_motors_app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d legend_motors_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/legend_motors_app?sslmode=disable
+      INTERNAL_API_KEY: ci-only-test-key-that-is-at-least-32-chars
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: PHP syntax check
+        run: php -l services/multilang/php/src/index.php
+      - name: Python syntax check
+        run: python -m py_compile services/multilang/python/app.py
+      - name: Install Python test dependencies
+        run: python -m pip install -r services/multilang/python/requirements.txt pytest httpx
+      - name: Python API tests
+        run: PYTHONPATH=services/multilang/python pytest -q services/multilang/python/tests
+      - name: C++ compile with warnings as errors
+        run: g++ -std=c++17 -O2 -Wall -Wextra -Werror services/multilang/cpp/inventory_priority.cpp -o /tmp/inventory_priority
+      - name: C++ valid input test
+        run: /tmp/inventory_priority 30 1 1 | grep -q '"score":35'
+      - name: C++ rejects invalid input
+        run: |
+          if /tmp/inventory_priority -1 1 0; then exit 1; else echo "invalid input rejected"; fi
+      - name: Seed disposable PostgreSQL schema
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f services/multilang/tests/fixtures/postgres-inventory.sql
+      - name: Build PHP API container
+        run: docker build -f services/multilang/php/Dockerfile -t multilang-php-api services/multilang/php
+      - name: Start PHP API on host network for integration tests
+        run: |
+          docker run --detach --rm --network host --name multilang-php-api \
+            --env DATABASE_URL --env INTERNAL_API_KEY multilang-php-api
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:80/health >/dev/null; then
+              echo "PHP API HTTP endpoint is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs multilang-php-api
+          exit 1
+      - name: Exercise real PostgreSQL queries, bearer auth, and HTTP routing
+        env:
+          API_BASE_URL: http://127.0.0.1:80
+        run: python services/multilang/tests/php_http_integration.py
+      - name: Build both service containers
+        run: docker compose -f services/multilang/docker-compose.yml build
