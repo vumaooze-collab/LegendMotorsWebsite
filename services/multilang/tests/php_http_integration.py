@@ -36,6 +36,9 @@ def main():
     status, denied = request("/api/internal/vehicles")
     assert status == 401 and denied.get("error") == "Unauthorized", (status, denied)
 
+    status, denied_bad_key = request("/api/internal/vehicles", token="incorrect-key")
+    assert status == 401 and denied_bad_key.get("error") == "Unauthorized", (status, denied_bad_key)
+
     status, internal = request("/api/internal/vehicles", token=KEY)
     assert status == 200 and isinstance(internal.get("data"), list), (status, internal)
     internal_ids = {row["id"] for row in internal["data"]}
