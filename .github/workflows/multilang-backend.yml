@@ -24,6 +24,10 @@ jobs:
         run: php -l services/multilang/php/src/index.php
       - name: Python syntax check
         run: python -m py_compile services/multilang/python/app.py
+      - name: Install Python test dependencies
+        run: python -m pip install -r services/multilang/python/requirements.txt pytest httpx
+      - name: Python API tests
+        run: PYTHONPATH=services/multilang/python pytest -q services/multilang/python/tests
       - name: C++ compile with warnings as errors
         run: g++ -std=c++17 -O2 -Wall -Wextra -Werror services/multilang/cpp/inventory_priority.cpp -o /tmp/inventory_priority
       - name: C++ valid input test
