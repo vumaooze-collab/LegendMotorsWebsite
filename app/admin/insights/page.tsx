@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/auth/authorization";
 import { getDealershipInsights } from "@/lib/analytics/dealership-insights";
-import type { AwaitedReturnType } from "@/types/analytics";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +18,7 @@ export default async function InsightsPage() {
     return <main className="admin-main"><h1>Dealership intelligence</h1><p>You do not have permission to view dealership insights.</p></main>;
   }
 
-  let insights: AwaitedReturnType;
+  let insights: Awaited<ReturnType<typeof getDealershipInsights>>;
   try {
     insights = await getDealershipInsights();
   } catch {
