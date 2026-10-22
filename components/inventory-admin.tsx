@@ -207,7 +207,7 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
       for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("altText", `${imageVehicle.stockNumber} - ${file.name.replace(/\\.[^.]+$/, "").replace(/[-_]+/g, " ")}`);
+        formData.append("altText", `${imageVehicle.stockNumber} - ${file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ")}`);
         try {
           const response = await fetch(`/api/admin/inventory/${imageVehicle.id}/images/upload`, {
             method: "POST",
@@ -220,9 +220,15 @@ export function InventoryAdmin({ canManage }: { canManage: boolean }) {
           failures.push(`${file.name}: ${uploadError instanceof Error ? uploadError.message : "Upload failed."}`);
         }
       }
-      await refresh();
-      setNotice(`${uploaded} photo(s) uploaded.${failures.length ? ` ${failures.length} failed.` : ""}`);
+      try {
+        await refresh();
+      } catch (refreshError) {
+        failures.push(refreshError instanceof Error ? `Inventory refresh failed: ${refreshError.message}` : "Inventory refresh failed.");
+      }
+      setNotice(`${uploaded} photo(s) uploaded.${failures.length ? ` ${failures.length} issue(s) need attention.` : ""}`);
       if (failures.length) setError(failures.join(" "));
+    } catch (uploadBatchError) {
+      setError(uploadBatchError instanceof Error ? uploadBatchError.message : "Unable to finish photo upload.");
     } finally {
       setBusy(false);
     }
