@@ -45,7 +45,9 @@ export async function login(formData: FormData) {
   }
 
   try {
-    await clearLoginAttempts(email, address);
+    // Clearing counters is housekeeping. A cleanup failure must not block a
+    // correctly authenticated user from receiving a session.
+    await clearLoginAttempts(email, address).catch(() => undefined);
     const { token } = await createSessionForUser(user.id);
     await setSessionCookie(token);
   } catch {
