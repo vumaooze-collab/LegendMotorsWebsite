@@ -33,11 +33,10 @@ export async function POST(request: Request) {
 
   try {
     const phone = parsed.data.phone.replace(/[\s()-]/g, "");
-    const customer = await prisma.customer.upsert({
-      where: { phone },
-      update: { name: parsed.data.name },
-      create: { name: parsed.data.name, phone },
-    });
+    const existingCustomer = await prisma.customer.findFirst({ where: { phone }, select: { id: true } });
+    const customer = existingCustomer
+      ? await prisma.customer.update({ where: { id: existingCustomer.id }, data: { name: parsed.data.name } })
+      : await prisma.customer.create({ data: { name: parsed.data.name, phone } });
 
     const enquiry = await prisma.enquiry.create({
       data: {
